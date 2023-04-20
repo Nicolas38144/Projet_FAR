@@ -19,7 +19,7 @@ int endOfCommunication(char *msg)
 {
     if (strcmp(msg, "fin\n") == 0)
     {
-        strcpy(msg, "fin de la communication\n");
+        strcpy(msg, "a quitté la conversation\n");
         return 1;
     }
     return 0;
@@ -35,8 +35,6 @@ void sending(int dS, const char * msg) {
         perror("Erreur dans l'envoi des données");
         exit(EXIT_FAILURE);
     }
-
-    printf("Envoyé: %s\n", msg);
 }
 
 /*Fonction pour le thread d'envoi*/
@@ -47,7 +45,7 @@ void * sending_th(void * dSparam){
         /*Saisie du message au clavier*/
         char * m = (char *) malloc(sizeof(char)*100);
 
-        printf("~");
+        /*printf("~");*/
         fgets(m, 100, stdin);
 
         /*On vérifie si le client veut quitter la communication*/
@@ -79,7 +77,7 @@ void receiving(int dS, char * buffer, ssize_t size) {
     buffer[num_bytes] = '\0';
 
     /*affiche les données reçues*/
-    printf("Réception : %s\n", buffer);
+    /*printf("Réception : %s\n", buffer);*/
 }
 
 
@@ -92,7 +90,8 @@ void *receiving_th(void *dSparam)
     {
         /*Réception du message dans le tampon de réception*/
         receiving(dS, r, sizeof(r));
-        printf(">%s", r);
+        printf("%s", r);
+        /*printf(">%s", r);*/
     }
     close(dS);
     return NULL;

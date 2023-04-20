@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#define MAX_CLIENT 2
+#define MAX_CLIENT 1000000
 
 /*
 Compiler gcc -pthread -Wall -ansi -o server server.c
@@ -100,7 +100,7 @@ void sendMsg(int dS, const char * message) {
 *       char * msg : Le message du client
 */
 int checkLogOut(char * msg){
-    if (strcmp(msg, "fin\n") ==0 ) {
+    if (strcmp(msg, "fin de la communication\n") ==0 ) {
         return 1;
     }
     return 0;
