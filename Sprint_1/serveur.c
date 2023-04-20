@@ -9,8 +9,8 @@
 #define MAX_CLIENT 1000000
 
 /*
-Compiler gcc -pthread -Wall -ansi -o server server.c
-Lancer avec ./serveur votre_ip votre_port
+Compiler gcc -pthread -Wall -ansi -o serveur serveur.c
+Lancer avec ./serveur <votre_port>
 */
 
 
@@ -111,7 +111,7 @@ int checkLogOut(char * msg){
 /*
 *   broadcast(void * numeroClient) :
 *       Crée un nouveau thread qui exécute la fonction broadcast en utilisant l'entier numClient comme argument.
-*       void * numeroClient : 
+*       void * numeroClient : Le numéro du client...
 */
 void * broadcast(void * numeroClient){
     int isFinished = 0;

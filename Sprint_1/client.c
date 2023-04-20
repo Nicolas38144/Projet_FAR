@@ -8,17 +8,21 @@
 #include <stdint.h>
 
 /*Compiler gcc -pthread -Wall -ansi -o client client.c*/
-/*Lancer avec ./client votre_ip votre_port*/
+/*Lancer avec ./client <IP_serveur> <port_serveur>*/
 
-int isEnd = 0;
 
+
+int isFinished = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/*Vérifie si un client souhaite quitter la communication*/
-int endOfCommunication(char *msg)
-{
-    if (strcmp(msg, "fin\n") == 0)
-    {
+
+/*
+*   checkLogOut(char * msg) :
+*       Check si le client veut se déconnecter, il enverra au serveur le mot "fin"
+*       char * msg : Le message du client
+*/
+int checkLogOut(char *msg) {
+    if (strcmp(msg, "fin\n") == 0) {
         strcpy(msg, "a quitté la conversation\n");
         return 1;
     }
@@ -27,8 +31,13 @@ int endOfCommunication(char *msg)
 
 /*----------------------------------------------FONCTION D'ENVOI---------------------------------------------*/
 
-/*Message envoyé à une socket et teste la conformité*/
-void sending(int dS, const char * msg) {
+/*
+*   sendMsg(int dS, const char * message) :
+*       Message envoyé à une socket et teste la conformité
+*       int dS : expéditeur du message
+*       const char * message : message à envoyer
+*/
+void sendMsg(int dS, const char * msg) {
     /*Envoi les données à la socket*/
     ssize_t num_bytes = send(dS, msg, strlen(msg)+1, 0);
     if (num_bytes < 0) {
@@ -37,23 +46,24 @@ void sending(int dS, const char * msg) {
     }
 }
 
-/*Fonction pour le thread d'envoi*/
+
+/*
+*   sending_th(void * dSparam) :
+*       Envoie des messages à travers une connexion de socket, jusqu'à ce que la variable "isFinished" soit vraie.
+*       dSparam : descripteur de socket. Il est ensuite convertit en entier et est utilisé pour envoyer des messages.
+*/
 void * sending_th(void * dSparam){
     int dS = (long)dSparam;
-    while (!isEnd){
+    while (!isFinished){
 
         /*Saisie du message au clavier*/
         char * m = (char *) malloc(sizeof(char)*100);
-
         /*printf("~");*/
         fgets(m, 100, stdin);
-
         /*On vérifie si le client veut quitter la communication*/
-        isEnd = endOfCommunication(m);
-        
+        isFinished = checkLogOut(m);        
         /*Envoi*/
-        sending(dS, m);
-
+        sendMsg(dS, m);
         free(m);
     }
     close(dS);
@@ -64,32 +74,36 @@ void * sending_th(void * dSparam){
 
 /*------------------------------------------------FONCTION DE RÉCEPTION------------------------------------------------*/
 
-/*Réceptionne un message envoyé à une socket et teste sa conformité*/
-void receiving(int dS, char * buffer, ssize_t size) {
-    /*Reçoit les données de la part du socket*/
-    ssize_t num_bytes = recv(dS, buffer, size, 0);
+/*
+*   receiveMsg(int dS, char * buffer, ssize_t size) :
+*       Réceptionne un message envoyé à une socket et teste sa conformité
+*       int dS : la socket
+*       char * msg : message à recevoir
+*       ssize_t size : taille maximum du message à recevoir
+*/
+void receiveMsg(int dS, char * buffer, ssize_t size) {
+    ssize_t num_bytes = recv(dS, buffer, size, 0);     /*Reçoit les données de la part du socket*/
     if (num_bytes < 0) {
         perror("Erreur dans la réception de la donnée");
         exit(EXIT_FAILURE);
     }
-
-     
     buffer[num_bytes] = '\0';
-
-    /*affiche les données reçues*/
     /*printf("Réception : %s\n", buffer);*/
 }
 
 
-/*Fonction pour le thread de reception*/
-void *receiving_th(void *dSparam)
-{
+
+/*
+*   receiveMsg(int dS, char * buffer, ssize_t size) :
+*       Fonction pour le thread de reception
+*       dSparam : Descripteur de socket. Il est ensuite convertit en entier et est utilisé pour recevoir des messages.
+*/
+void *receiving_th(void *dSparam) {
     int dS = (int)(intptr_t)dSparam;
     char r[1024]; /*Tampon de réception*/
-    while (!isEnd)
-    {
+    while (!isFinished){
         /*Réception du message dans le tampon de réception*/
-        receiving(dS, r, sizeof(r));
+        receiveMsg(dS, r, sizeof(r));
         printf("%s", r);
         /*printf(">%s", r);*/
     }
@@ -146,7 +160,7 @@ int main(int argc, char *argv[])
     printf("Votre pseudo choisi est : %s\n Stylé !\n", myString);
 
     /*Envoi du message*/
-    sending(dS, myString);
+    sendMsg(dS, myString);
 
 
     /*En attente d'un autre client*/
@@ -156,7 +170,7 @@ int main(int argc, char *argv[])
 
         /*Reception du premier message informant de l'arrivée d'un autre client*/
         char *msg = (char *)malloc(sizeof(char) * 100);
-        receiving(dS, msg, sizeof(char) * 100);
+        receiveMsg(dS, msg, sizeof(char) * 100);
         printf("%s", msg);
 
         free(msg);
@@ -187,7 +201,5 @@ int main(int argc, char *argv[])
     pthread_join(thread_sendind, NULL);
     pthread_join(thread_receiving, NULL);
 
-    
-   
     return 0;
 }

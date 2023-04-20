@@ -21,7 +21,7 @@
  * @param msg message du client à vérifier
  * @return int
  */
-int endOfCommunication(char *msg);
+int checkLogOut(char *msg);
 
 /**
  * @brief Message envoyé à une socket et teste la conformité
@@ -30,7 +30,7 @@ int endOfCommunication(char *msg);
  * @param dS message à envoyer
  * @return void
  */
-void sending(int dS, const char * msg);
+void sendMsg(int dS, const char * msg);
 
 /**
  * @brief Fonction pour le thread d'envoi
@@ -47,7 +47,7 @@ void * sending_th(void * dSparam);
  * @param buffer un pointeur vers un tampon (buffer) où les données reçues seront stockées
  * @return void
  */
-void receiving(int dS, char * buffer, ssize_t size);
+void receiveMsg(int dS, char * buffer, ssize_t size);
 
 
 /**
