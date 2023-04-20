@@ -170,14 +170,14 @@ int main(int argc, char *argv[])
     pthread_t thread_sendind;
     pthread_t thread_receiving;
 
-    int thread1 = pthread_create(&thread_sendind, NULL, sending_th, (void *)dS);
+    int thread1 = pthread_create(&thread_sendind, NULL, sending_th, (void *)(intptr_t)dS);
     if (thread1 == -1)
     {
         perror("error thread 1");
     }
 
     /*Création d'un thread de reception*/
-    int thread2 = pthread_create(&thread_receiving, NULL, receiving_th, (void *)dS);
+    int thread2 = pthread_create(&thread_receiving, NULL, receiving_th, (void *)(intptr_t)dS);
     if (thread2 == -1)
     {
         perror("error thread 2");

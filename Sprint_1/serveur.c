@@ -100,7 +100,7 @@ void sendMsg(int dS, const char * message) {
 *       char * msg : Le message du client
 */
 int checkLogOut(char * msg){
-    if (strcmp(msg, "fin de la communication\n") ==0 ) {
+    if (strcmp(msg, "a quitté la conversation\n") ==0 ) {
         return 1;
     }
     return 0;
