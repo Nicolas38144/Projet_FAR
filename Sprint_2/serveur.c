@@ -96,11 +96,24 @@ void sendMsg(int dS, const char * message) {
 
 /*
 *   checkLogOut(char * msg) :
-*       Check si le client veut se déconnecter, il enverra au serveur le mot "fin"
+*       Check si le client veut se déconnecter
 *       char * msg : Le message du client
 */
 int checkLogOut(char * msg){
     if (strcmp(msg, "a quitté la conversation\n") ==0 ) {
+        return 1;
+    }
+    return 0;
+}
+
+
+/*
+*   helpCommand(char * msg) :
+*       Check si le client fait la commande /help
+*       char * msg : Le message du client
+*/
+int helpCommand(char * msg){
+    if (strcmp(msg, "/help\n") ==0 ) {
         return 1;
     }
     return 0;
