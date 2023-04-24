@@ -7,8 +7,8 @@
 #include <unistd.h>
 #include <stdint.h>
 
-/*Compiler */
-/*Lancer avec ./client <IP_serveur> <port_serveur>*/
+/*Compiler avec : gcc -pthread -Wall -ansi -o client client.c*/
+/*Lancer avec : ./client <IP_serveur> <port_serveur>*/
 
 
 

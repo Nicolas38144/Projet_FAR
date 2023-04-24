@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdint.h>
 
-/*Compiler */
+/*Compiler gcc -pthread -Wall -ansi -o client client.c*/
 /*Lancer avec ./client <IP_serveur> <port_serveur>*/
 
 
@@ -22,7 +22,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 *       char * msg : Le message du client
 */
 int checkLogOut(char *msg) {
-    if (strcmp(msg, "fin\n") == 0) {
+    if (strcmp(msg, "/logout\n") == 0) {
         strcpy(msg, "a quitté la conversation\n");
         return 1;
     }
@@ -187,14 +187,14 @@ int main(int argc, char *argv[])
     int thread1 = pthread_create(&thread_sendind, NULL, sending_th, (void *)(intptr_t)dS);
     if (thread1 == -1)
     {
-        perror("error thread 1");
+        perror("Error thread 1");
     }
 
     /*Création d'un thread de reception*/
     int thread2 = pthread_create(&thread_receiving, NULL, receiving_th, (void *)(intptr_t)dS);
     if (thread2 == -1)
     {
-        perror("error thread 2");
+        perror("Error thread 2");
     }
 
     /*Attente de la fin des threads*/
