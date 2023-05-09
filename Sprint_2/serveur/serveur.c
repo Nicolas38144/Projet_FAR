@@ -40,10 +40,20 @@ void * broadcast(void * numeroClient){
         receiveMsg(tabClient[numClient].dSC, msgReceived, sizeof(char)*100);
         printf("\nMessage recu: %s\n", msgReceived);
 
+        /* condition_a permet de gerer le cas ou le message ne commene pas par un @*/
+        int condition_a = 1;
+        /* s'il y a @ */
+        char first = msgReceived[0];
+        if (strcmp(&first, "@") == 0) {
+            sendingPrivate(numClient, msgReceived);
+        }else{
+            condition_a = 0;
+        }
+
         /*Le client veut-il se log out ?*/
         isFinished = checkLogOut(msgReceived);
         isCommand = checkIsCommand(msgReceived, tabClient[numClient].dSC);
-        if (isCommand == 0) {
+        if (isCommand == 0 && condition_a == 0) {
             /*Ajout du nom (=name) de l'expéditeur devant le message à envoyer*/
             char * msgToSend = (char *) malloc(sizeof(char)*200);
             strcat(msgToSend, nameSender);

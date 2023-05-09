@@ -126,6 +126,46 @@ int checkIsCommand(char * msg, int dS) {
     }
     return 0;
 }
+/*
+*   void sendingPrivate(int numClient, char *msgReceived) :
+*       envoie un message privé au client
+*/
+
+void sendingPrivate(int numClient, char *msgReceived) {
+  /*Récupération du nom du destinataire*/
+  char *nameDest = strtok(msgReceived, " ");
+  nameDest++;
+  /* Suppression du caractère @*/
+  /*Récupération du message*/
+  char *token = strtok(NULL, "");
+  char * msgToSend = (char *) malloc(sizeof(char)*200);
+  char * nameSender = tabClient[numClient].name; 
+  strcat(msgToSend, "[Message Privé] ");
+  strcat(msgToSend, nameSender);
+  strcat(msgToSend, " : ");
+  strcat(msgToSend, token);
+  /*Recherche du destinataire dans le tableau des clients connectés*/
+  int destFound = 0;
+  int i;
+  for (i = 0; i < MAX_CLIENT; i++) {
+    if (tabClient[i].connected == 1 && strcmp(nameDest, tabClient[i].name) == 0) {
+      /*Envoi du message au destinataire*/
+      int sendResult = send(tabClient[i].dSC, msgToSend, strlen(msgToSend) + 1, 0);
+      /*Gestion s'il y a une erreur*/
+      if (sendResult == -1) {
+        perror("Erreur lors de l'envoi du message");
+        exit(EXIT_FAILURE);
+      }
+
+      destFound = 1;
+      break;
+    }
+  }
+    /*Destinataire non trouvé*/
+  if (destFound == 0) {
+    printf("Le destinataire n'a pas été trouvé.\n");
+  }
+}
 
 void killThread() {
     
