@@ -5,11 +5,16 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <semaphore.h>
 
 #include "global.h"
 #include "funcServ.h"
 
-#define MAX_CLIENT 1000000
+#define MAX_CLIENT 2
+
+sem_t semNbClient;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 
 /*
 Compiler gcc -pthread -Wall -ansi -o serveur serveur.c
@@ -46,7 +51,7 @@ void * broadcast(void * numeroClient){
             strcat(msgToSend, msgReceived);
 
             /*Envoi du message à tous les auters clients connectés*/
-            printf("Envoi du message au(x) %ld client(s) connecté(s).\n", nbConnectedClient);
+            printf("Envoi du message au(x) %d client(s) connecté(s).\n", nbConnectedClient);
             sendMsg(tabClient[numClient].dSC, msgToSend);
 
             /*Libération de la mémoire du message envoyé*/
@@ -58,9 +63,10 @@ void * broadcast(void * numeroClient){
     }
 
     /*Fermeture du socket client*/
-    nbConnectedClient -= 1;
+    /*nbConnectedClient -= 1;*/
     tabClient[numClient].connected = 0;
     close(tabClient[numClient].dSC);
+    sem_post(&semNbClient);
 
     return NULL;
 }
@@ -70,6 +76,9 @@ void * broadcast(void * numeroClient){
 * _____________________ MAIN _____________________
 */
 int main(int argc, char *argv[]) {
+
+    sem_init(&semNbClient, 0, MAX_CLIENT);
+
     /*Verification des paramètres*/
     if (argc < 2) {
         perror("Erreur : Lancez avec ./serveur <votre_port>");
@@ -106,7 +115,13 @@ int main(int argc, char *argv[]) {
     /*Pour faire fonctionner le serveur en continue*/
     while(1) {
 
-        if(nbConnectedClient < MAX_CLIENT){
+        /*Tant qu'on peut accepter des clients */
+        sem_wait(&semNbClient); 
+
+        /*On tue les threads pour lesquels les clients ont quitté la connexion*/
+        /*killThread();*/
+
+        /*if(nbConnectedClient < MAX_CLIENT){*/
 
             /*Accepter une connexion*/
             struct sockaddr_in aC;
@@ -117,6 +132,11 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_FAILURE);
             }
 
+
+            /*Récupération du nombre de client connectés*/
+            int valueSem;
+            sem_getvalue(&semNbClient, &valueSem);
+            nbConnectedClient = MAX_CLIENT-valueSem;
 
             /*Attribution au client de son numéro*/
             long numClient = getNumClient();
@@ -159,9 +179,10 @@ int main(int argc, char *argv[]) {
             if(threadClient == -1){
                 perror("Erreur lors de la création du thread");
             }
-            nbConnectedClient += 1;
-        }
+            /*nbConnectedClient += 1;*/
+        /*}*/
     }
+    sem_destroy(&semNbClient);
     close(dS);
     return 0;
 }

@@ -16,5 +16,6 @@ extern void sendPersonnalMsg(int dS, char * message);
 extern int checkLogOut(char *msg);
 extern void helpCommand(int dS);
 extern int checkIsCommand(char *msg, int dS);
+extern void killThread();
 
 #endif /* FUNCSERV_H */

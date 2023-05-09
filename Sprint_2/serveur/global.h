@@ -3,7 +3,7 @@
 #include <pthread.h>
 
 
-#define MAX_CLIENT 1000000
+#define MAX_CLIENT 2
 
 
 /*
@@ -27,7 +27,7 @@ struct Client{
 */
 extern Client tabClient[MAX_CLIENT];
 extern pthread_t tabThread[MAX_CLIENT];
-extern long nbConnectedClient;
+extern int nbConnectedClient;
 
 #endif /* GLOBALS_H */
 

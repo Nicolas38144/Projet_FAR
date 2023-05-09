@@ -1,6 +1,6 @@
 #include "global.h"
 #include "funcServ.h"
-#define MAX_CLIENT 1000000
+#define MAX_CLIENT 2
 
 
 
@@ -125,4 +125,8 @@ int checkIsCommand(char * msg, int dS) {
         return 1;
     }
     return 0;
+}
+
+void killThread() {
+    
 }
