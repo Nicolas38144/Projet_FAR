@@ -1,6 +1,6 @@
 #include "global.h"
 #include "funcServ.h"
-#define MAX_CLIENT 2
+#define MAX_CLIENT 5
 
 
 
@@ -109,8 +109,6 @@ void helpCommand(int dS) {
     fclose(f);
     content = strtok(content, "");
     sendPersonnalMsg(dS, content);
-    //free(content);
-    printf("helpCommand executée avec succès\n");
 }
 
 

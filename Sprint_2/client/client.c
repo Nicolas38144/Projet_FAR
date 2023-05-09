@@ -6,6 +6,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <signal.h>
+#include "client.h"
 
 /*Compiler gcc -pthread -Wall -ansi -o client client.c*/
 /*Lancer avec ./client <IP_serveur> <port_serveur>*/
@@ -14,6 +16,7 @@
 
 int isFinished = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int save_dS;
 
 
 /*
@@ -28,6 +31,11 @@ int checkLogOut(char *msg) {
     }
     return 0;
 }
+
+void handle_sigint(int sig) {
+    sendMsg(save_dS, "a quitté la conversation\n");
+}
+
 
 /*----------------------------------------------FONCTION D'ENVOI---------------------------------------------*/
 
@@ -54,12 +62,13 @@ void sendMsg(int dS, const char * msg) {
 */
 void * sending_th(void * dSparam){
     int dS = (long)dSparam;
+    save_dS = dS;
     while (!isFinished){
 
         /*Saisie du message au clavier*/
         char * m = (char *) malloc(sizeof(char)*100);
-        /*printf("~");*/
         fgets(m, 100, stdin);
+        
         /*On vérifie si le client veut quitter la communication*/
         isFinished = checkLogOut(m);        
         /*Envoi*/
@@ -88,7 +97,6 @@ void receiveMsg(int dS, char * buffer, ssize_t size) {
         exit(EXIT_FAILURE);
     }
     buffer[num_bytes] = '\0';
-    /*printf("Réception : %s\n", buffer);*/
 }
 
 
@@ -105,7 +113,6 @@ void *receiving_th(void *dSparam) {
         /*Réception du message dans le tampon de réception*/
         receiveMsg(dS, r, sizeof(r));
         printf("%s", r);
-        /*printf(">%s", r);*/
     }
     close(dS);
     return NULL;
@@ -121,6 +128,9 @@ int main(int argc, char *argv[])
     {
         printf("Erreur : Lancez avec ./client <votre_ip> <votre_port> ");
     }
+
+    /*On vérifie si le client fait Ctrl+C*/
+    signal(SIGINT,handle_sigint);
 
     /*Création de la socket*/
     int dS = socket(PF_INET, SOCK_STREAM, 0);
@@ -157,8 +167,9 @@ int main(int argc, char *argv[])
         myString[len-1] = '\0';
     }
 
-    printf("Votre pseudo choisi est : %s\n Stylé !\n", myString);
-
+    printf("Votre pseudo choisi est : %s\n", myString);
+    printf("\n");
+    
     /*Envoi du message*/
     sendMsg(dS, myString);
 

@@ -3,7 +3,7 @@
 #include <pthread.h>
 
 
-#define MAX_CLIENT 2
+#define MAX_CLIENT 5
 
 
 /*

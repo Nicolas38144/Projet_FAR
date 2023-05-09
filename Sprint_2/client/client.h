@@ -57,3 +57,5 @@ void receiveMsg(int dS, char * buffer, ssize_t size);
  * @return void
  */
 void *receiving_th(void *dSparam);
+
+void handle_sigint(int sig);
