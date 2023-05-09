@@ -37,7 +37,7 @@ void * broadcast(void * numeroClient){
 
         /*Le client veut-il se log out ?*/
         isFinished = checkLogOut(msgReceived);
-        isCommand = checkIsCommand(msgReceived);
+        isCommand = checkIsCommand(msgReceived, tabClient[numClient].dSC);
         if (isCommand == 0) {
             /*Ajout du nom (=name) de l'expéditeur devant le message à envoyer*/
             char * msgToSend = (char *) malloc(sizeof(char)*200);

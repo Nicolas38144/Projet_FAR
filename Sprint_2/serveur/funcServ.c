@@ -60,6 +60,25 @@ void sendMsg(int dS, const char * message) {
 
 
 /*
+*   sendPersonnalMsg(int dS, const char * message) :
+*       Envoi un message uniquement à l'expéditeur du message
+*       int dS : expéditeur du message
+*       const char * message : message à envoyer
+*/
+void sendPersonnalMsg(int dS, char * message) {
+    /*Envoi un message uniquement à l'expéditeur du message*/
+    int sendResult = send(dS, message, strlen(message)+1, 0);
+    printf("%d\n",sendResult);
+    /*Gestion s'il y a une erreur*/
+    if (sendResult == -1) {
+        perror("Erreur lors de l'envoi du message");
+        exit(EXIT_FAILURE);
+    }
+    free(message);
+}
+
+
+/*
 *   checkLogOut(char * msg) :
 *       Check si le client veut se déconnecter
 *       char * msg : Le message du client
@@ -77,9 +96,10 @@ int checkLogOut(char * msg) {
 *       Check si le client fait la commande /help
 *       char * msg : Le message du client
 */
-void helpCommand(char* content) {
+void helpCommand(int dS) {
     FILE *f;
     char c;
+    char * content = (char *) malloc(sizeof(char)*3000);
     f = fopen("commande.txt", "rt");
     int i = 0;
     while((c = fgetc(f)) != EOF) { 
@@ -87,16 +107,17 @@ void helpCommand(char* content) {
         i++; 
     }
     fclose(f);
-    return content;
+    content = strtok(content, "");
+    sendPersonnalMsg(dS, content);
+    //free(content);
     printf("helpCommand executée avec succès\n");
 }
 
 
-int checkIsCommand(char * msg) {
-    printf("%c\n", msg[0]);
+int checkIsCommand(char * msg, int dS) {
     if (msg[0] == '/') {
-        if (strcmp(msg, "/help") == 0) {
-            helpCommand();//TODO
+        if (strcmp(msg, "/help\n") == 0) {
+            helpCommand(dS);
         }
         /*else if (strcmp(msg, "/NOM_COMMANDE") == 0) {
             NOM_COMMANDE();
@@ -105,9 +126,3 @@ int checkIsCommand(char * msg) {
     }
     return 0;
 }
-
-
-/*
-https://github.com/MargotGeorget/projetFAR
-https://github.com/thmsfnr
-*/

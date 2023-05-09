@@ -12,8 +12,9 @@
 extern int getNumClient();
 extern void receiveMsg(int dS, char *msg, ssize_t size);
 extern void sendMsg(int dS, const char *message);
+extern void sendPersonnalMsg(int dS, char * message);
 extern int checkLogOut(char *msg);
-extern void helpCommand();
-extern int checkIsCommand(char *msg);
+extern void helpCommand(int dS);
+extern int checkIsCommand(char *msg, int dS);
 
 #endif /* FUNCSERV_H */
