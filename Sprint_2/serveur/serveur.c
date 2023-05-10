@@ -169,6 +169,7 @@ int main(int argc, char *argv[]) {
             receiveMsg(dSC, name, sizeof(char)*100);
             name = strtok(name, "\n");
             availableName = isNameAvailable(name);
+            printf("Pseudo non disponible\n");
         }
 
         /*pseudo valide*/

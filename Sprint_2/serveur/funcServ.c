@@ -177,18 +177,22 @@ void killThread() {
  */
 int isNameAvailable(char * name){
     int i= 0;
+    int available = 1;
 
-    pthread_mutex_lock(&lock); /*DÃ©but d'une section critique*/
-    for(i=0; i<MAX_CLIENT; i++){
-	if(tabClient[i].connected && strcmp(tabClient[i].name, name)==0){
-		return  0;
-   
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+    
+    while (i<MAX_CLIENT && available){
+        
+        if(tabClient[i].connected){
+            if(strcmp(tabClient[i].name,name)==0){
+                available = 0;
+            }
         }
-       
+        i+=1;
     }
     pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
     
-    return 1;
+    return available;
 }
 
 
@@ -217,7 +221,7 @@ void All(int numClient, char* message) {
     addName(message, tabClient[numClient].name);
 
     for (int i = 0; i < MAX_CLIENT; i++) {
-        if (tabClient[i].connected && dSC != tabClient[i].dSC) {
+        if (tabClient[i].connected && dSC == tabClient[i].dSC) {
             sendMsg(tabClient[i].dSC, message);
         }
     }
