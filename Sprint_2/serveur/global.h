@@ -1,5 +1,6 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
+
 #include <pthread.h>
 
 
@@ -28,7 +29,7 @@ struct Client{
 extern Client tabClient[MAX_CLIENT];
 extern pthread_t tabThread[MAX_CLIENT];
 extern int nbConnectedClient;
-
+extern pthread_mutex_t lock;
 #endif /* GLOBALS_H */
 
 
