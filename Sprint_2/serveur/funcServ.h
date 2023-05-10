@@ -18,5 +18,9 @@ extern void helpCommand(int dS);
 extern int checkIsCommand(char *msg, int dS);
 extern void killThread();
 extern void sendingPrivate(int numClient, char *msgReceived);
+extern int isNameAvailable(char * name);
+extern void send_integer(int dS, int number);
+extern void All(int numClient, char* message);
 
-#endif /* FUNCSERV_H */
+
+#endif

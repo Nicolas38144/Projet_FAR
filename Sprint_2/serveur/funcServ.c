@@ -1,6 +1,7 @@
 #include "global.h"
 #include "funcServ.h"
 #define MAX_CLIENT 5
+#define MAX_MSG 150
 
 
 
@@ -167,4 +168,60 @@ void sendingPrivate(int numClient, char *msgReceived) {
 
 void killThread() {
     
+}
+
+
+/* 
+ * Fonction qui vÃ©rifie si le pseudo saisi n'est pas dÃ©jÃ  utilisÃ© 
+ * Retour: 1 si le pseudo n'est pas encore utilisÃ©, 0 sinon 
+ */
+int isNameAvailable(char * name){
+    int i= 0;
+
+    pthread_mutex_lock(&lock); /*DÃ©but d'une section critique*/
+    for(i=0; i<MAX_CLIENT; i++){
+	if(tabClient[i].connected && strcmp(tabClient[i].name, name)==0){
+		return  0;
+   
+        }
+       
+    }
+    pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+    
+    return 1;
+}
+
+
+
+void send_integer(int dS, int number){
+    int send_result = send(dS, &number, sizeof(int), 0);
+    if (send_result == -1){ /*vÃ©rification de la valeur de retour*/
+        perror("erreur lors de l'envoi");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void addName(char *message, char *name) {
+    char newMessage[MAX_MSG];
+    snprintf(newMessage, MAX_MSG, "[%s] %s", name, message);
+    strcpy(message, newMessage);
+}
+
+
+void All(int numClient, char* message) {
+
+    /*pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+    int dSC = tabClient[numClient].dSC;
+
+    addName(message, tabClient[numClient].name);
+
+    for (int i = 0; i < MAX_CLIENT; i++) {
+        if (tabClient[i].connected && dSC != tabClient[i].dSC) {
+            sendMsg(tabClient[i].dSC, message);
+        }
+    }
+
+    /*pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+
 }
