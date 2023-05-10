@@ -13,7 +13,6 @@
 #define MAX_CLIENT 5
 
 sem_t semNbClient;
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /*
@@ -149,35 +148,53 @@ int main(int argc, char *argv[]) {
 
         /*Attribution au client de son numéro*/
         long numClient = getNumClient();
-        printf("Client %ld connecté\n", numClient);
+       
 
         /*Envoi au client le nombre de clients qui sont déjà connectés*/
-        int sendClient = send(dSC, &nbConnectedClient, sizeof(int), 0);
-        if (sendClient == -1){
-            perror("Erreur lors de l'envoie du nombre de client connctés au nouveau client");
-            exit(EXIT_FAILURE);
-        }
+        send_integer(dSC, numClient);
+        
+        printf("Client %ld connecté\n", numClient);
 
-
-        /*On enregistre la socket du client*/
-        tabClient[numClient].dSC = dSC;
-        tabClient[numClient].connected = 1;
+     
             
 
         /*Réception du nom (=name) du client. Son name <= 100 caractères*/
         char * name = (char *) malloc(sizeof(char)*100);
-        receiveMsg(dSC, name, sizeof(char)*100);
+        /*receiveMsg(dSC, name, sizeof(char)*100);*/
+
+        int availableName = 0; /*false*/
+
+        while(!availableName){
+            send_integer(dSC,availableName);
+            receiveMsg(dSC, name, sizeof(char)*100);
+            name = strtok(name, "\n");
+            availableName = isNameAvailable(name);
+        }
+
+        /*pseudo valide*/
+        send_integer(dSC, availableName);
 
 
         /*Enregistrement du nom (=name) du client*/
-        name = strtok(name, "\n");/*permet de ne garder que le nom sans tout l'espace à côté*/
+
+        pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+        /*name = strtok(name, "\n");permet de ne garder que le nom sans tout l'espace à côté*/
         tabClient[numClient].name = (char *) malloc(sizeof(char)*100);
         strcpy(tabClient[numClient].name,name);
+        
+        /*On enregistre la socket du client*/
+        tabClient[numClient].dSC = dSC;
+        tabClient[numClient].connected = 1;
 
+        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
 
         /*On avertie tout le monde de l'arriver du nouveau client*/
-        strcat(name," à rejoint la communication\n");
-        sendMsg(dSC, name);
+        strcpy(name," a rejoint la communication\n");
+        All(numClient, name);
+
+        printf("%s\n", name);
+
 
         /*On libère la mémoire de "name"*/
         free(name);
@@ -193,3 +210,4 @@ int main(int argc, char *argv[]) {
     close(dS);
     return 0;
 }
+ 
