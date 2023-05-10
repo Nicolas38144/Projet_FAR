@@ -149,29 +149,46 @@ int main(int argc, char *argv[])
     int nbClient = 0;
     if (recv(dS, &nbClient, sizeof(int), 0) == -1){ 
         perror("erreur au recv du numClient");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     
     printf("Vous êtes le client numéro %d. \n", nbClient);
 
 
     /*choix pseudo du client qui se connecte*/
-    char myString[100];
+    int availableName;
+    char * name = (char *) malloc(sizeof(char)*100);
+    recv(dS,&availableName,sizeof(int),0);
+   
 
     printf("Entrez votre pseudo : ");
-    fgets(myString, 100, stdin);
-
-    /*Enlever le caractere de saut de ligne (\n) a la fin de la chaine*/
-    size_t len = strlen(myString);
-    if (myString[len-1] == '\n') {
-        myString[len-1] = '\0';
+    fgets(name, 100, stdin);
+    sendMsg(dS,name);
+    recv(dS,&availableName,sizeof(int),0);
+   
+    while(!availableName){
+        printf("Pseudo déjà  utilisé!\nVotre pseudo: ");
+        fgets(name, 100, stdin);
+        sendMsg(dS,name);
+        recv(dS,&availableName,sizeof(int),0);
     }
 
-    printf("Votre pseudo choisi est : %s\n", myString);
+
+    /*Enlever le caractere de saut de ligne (\n) a la fin de la chaine
+    size_t len = strlen(name);
+    if (name[len-1] == '\n') {
+        name[len-1] = '\0';
+    }*/
+
+    printf("Votre pseudo choisi est : %s\n", name);
     printf("\n");
     
     /*Envoi du message*/
-    sendMsg(dS, myString);
+    sendMsg(dS, name);
+    
+
+    
+   
 
 
     /*En attente d'un autre client*/
@@ -186,6 +203,8 @@ int main(int argc, char *argv[])
 
         free(msg);
     }
+   
+    
 
     /*--------------------------------------------------COMMUNICATION-----------------------------------------------*/ 
 
