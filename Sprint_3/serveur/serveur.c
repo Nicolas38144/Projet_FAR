@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
         sem_wait(&semNbClient); 
 
         /*On tue les threads pour lesquels les clients ont quitté la connexion*/
-        /*killThread();*/
+        killThread();
 
 
         /*Accepter une connexion*/
