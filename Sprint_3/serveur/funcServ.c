@@ -111,6 +111,52 @@ void helpCommand(int dS) {
     sendPersonnalMsg(dS, content);
 }
 
+/* 
+*   isSendingFille(char * msg) :
+*       Regarde si le client a envoyé la commande /File
+*/
+
+int isSendingFille(char * msg){
+    if (strcasecmp(msg, "/File") == 0){
+        return 1;
+    }
+    return 0;
+}
+
+void receiveFile(int dSC) {
+    /* Réception du nom du fichier à recevoir */
+    char fileName[30];
+    receiveMsg(dSC, fileName, sizeof(char) * 30);
+    printf("\nNom du fichier à recevoir: %s \n", fileName);
+
+    fileName[strcspn(fileName, "\n")] = '\0';  // Remove newline character from fileName
+
+    /* Création du chemin pour accéder au fichier */
+    char pathToFile[130];
+    strcpy(pathToFile, "FileServeur/");
+    strcat(pathToFile, fileName);
+
+    /* Ouverture du fichier en mode binaire pour éviter les problèmes d'encodage */
+    FILE* fp;
+    fp = fopen(pathToFile, "wb");
+
+    /* Booléen pour contrôler la fin de la réception du fichier */
+    int isEndRecvFile;
+    recv(dSC, &isEndRecvFile, sizeof(int), 0);
+
+    /* Réception et écriture dans le fichier */
+    char buffer[1024];
+    size_t bytesRead;
+    while (!isEndRecvFile) {
+        bytesRead = recv(dSC, buffer, 1024, 0);
+        fwrite(buffer, sizeof(char), bytesRead, fp);
+        recv(dSC, &isEndRecvFile, sizeof(int), 0);
+        memset(buffer, 0, sizeof(buffer));
+    }
+    fclose(fp);
+}
+
+
 
 int checkIsCommand(char * msg, int dS) {
     if (msg[0] == '/') {
@@ -166,5 +212,12 @@ void sendingPrivate(int numClient, char *msgReceived) {
 }
 
 void killThread() {
-    
+    pthread_mutex_lock(&lock);
+    int i ;
+    for(i =0; i< MAX_CLIENT; i++){
+        if(tabThreadToKill[i]){
+            pthread_cancel(tabThread[i]);
+            tabThreadToKill[i] = 0;
+        }
+    }
 }

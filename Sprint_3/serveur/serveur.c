@@ -13,7 +13,6 @@
 #define MAX_CLIENT 5
 
 sem_t semNbClient;
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /*
@@ -67,6 +66,10 @@ void * broadcast(void * numeroClient){
             /*Libération de la mémoire du message envoyé*/
             free(msgToSend);
         }
+        /* si la commande est /File */
+        if (isSendingFille(msgReceived) == 1){
+            receiveFile(tabClient[numClient].dSC);
+        }
         
         /*Libération de la mémoire du message reçu*/
         free(msgReceived);
@@ -75,6 +78,7 @@ void * broadcast(void * numeroClient){
     /*Fermeture du socket client*/
     /*nbConnectedClient -= 1;*/
     tabClient[numClient].connected = 0;
+    tabThreadToKill[numClient] = 1;
     close(tabClient[numClient].dSC);
     sem_post(&semNbClient);
 
@@ -93,6 +97,11 @@ int main(int argc, char *argv[]) {
     if (argc < 2) {
         perror("Erreur : Lancez avec ./serveur <votre_port>");
 		exit(EXIT_FAILURE);
+    }
+
+    int i;
+    for(i=0;i<MAX_CLIENT;i++){
+        tabThreadToKill[i]=0;
     }
 
 	/*Création de la socket*/

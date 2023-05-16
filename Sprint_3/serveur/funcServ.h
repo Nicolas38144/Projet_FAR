@@ -18,5 +18,7 @@ extern void helpCommand(int dS);
 extern int checkIsCommand(char *msg, int dS);
 extern void killThread();
 extern void sendingPrivate(int numClient, char *msgReceived);
+extern int isSendingFille(char * msg);
+extern void receiveFile(int dSC);
 
 #endif /* FUNCSERV_H */

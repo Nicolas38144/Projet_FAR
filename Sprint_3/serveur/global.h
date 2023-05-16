@@ -28,6 +28,8 @@ struct Client{
 extern Client tabClient[MAX_CLIENT];
 extern pthread_t tabThread[MAX_CLIENT];
 extern int nbConnectedClient;
+extern int tabThreadToKill[MAX_CLIENT];
+extern pthread_mutex_t lock;
 
 #endif /* GLOBALS_H */
 
