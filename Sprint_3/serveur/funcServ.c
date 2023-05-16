@@ -1,6 +1,7 @@
 #include "global.h"
 #include "funcServ.h"
-#define MAX_CLIENT 5
+
+#define MAX_CLIENT 3
 #define MAX_MSG 150
 
 
@@ -221,7 +222,9 @@ void killThread() {
             tabThreadToKill[i] = 0;
         }
     }
+    pthread_mutex_unlock(&lock);
 }
+
 
 /* 
  * Fonction qui vÃ©rifie si le pseudo saisi n'est pas dÃ©jÃ  utilisÃ© 
@@ -257,6 +260,7 @@ void send_integer(int dS, int number){
     }
 }
 
+
 void addName(char *message, char *name) {
     char newMessage[MAX_MSG];
     snprintf(newMessage, MAX_MSG, "[%s] %s", name, message);
@@ -279,9 +283,4 @@ void All(int numClient, char* message) {
     }
 
     /*pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
-
 }
-
-
-
-

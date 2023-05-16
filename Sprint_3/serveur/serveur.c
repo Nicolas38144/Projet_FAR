@@ -10,7 +10,7 @@
 #include "global.h"
 #include "funcServ.h"
 
-#define MAX_CLIENT 5
+#define MAX_CLIENT 3
 
 sem_t semNbClient;
 
@@ -45,7 +45,8 @@ void * broadcast(void * numeroClient){
         char first = msgReceived[0];
         if (strcmp(&first, "@") == 0) {
             sendingPrivate(numClient, msgReceived);
-        }else{
+        }
+        else {
             condition_a = 0;
         }
 
@@ -100,7 +101,7 @@ int main(int argc, char *argv[]) {
     }
 
     int i;
-    for(i=0;i<MAX_CLIENT;i++){
+    for(i=0;i<MAX_CLIENT;i++) {
         tabThreadToKill[i]=0;
     }
 
@@ -160,14 +161,25 @@ int main(int argc, char *argv[]) {
         long numClient = getNumClient();
         printf("Client %ld connecté\n", numClient);
 
-         /*Envoi au client le nombre de clients qui sont déjà connectés*/
+        /*Envoi au client le nombre de clients qui sont déjà connectés*/
         send_integer(dSC, numClient);
-        
-        printf("Client %ld connecté\n", numClient);
-
 
         /*Réception du nom (=name) du client. Son name <= 100 caractères*/
         char * name = (char *) malloc(sizeof(char)*100);
+        /*receiveMsg(dSC, name, sizeof(char)*100);*/
+
+        int availableName = 0; /*false*/
+
+        while(!availableName){
+            send_integer(dSC,availableName);
+            receiveMsg(dSC, name, sizeof(char)*100);
+            name = strtok(name, "\n");
+            availableName = isNameAvailable(name);
+            printf("Pseudo non disponible\n");
+        }
+
+        /*pseudo valide*/
+        send_integer(dSC, availableName);
         /*receiveMsg(dSC, name, sizeof(char)*100);*/
 
         int availableName = 0; /*false*/
@@ -189,6 +201,10 @@ int main(int argc, char *argv[]) {
         pthread_mutex_lock(&lock); /*Début d'une section critique*/
 
         /*name = strtok(name, "\n");permet de ne garder que le nom sans tout l'espace à côté*/
+
+        pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+        /*name = strtok(name, "\n");permet de ne garder que le nom sans tout l'espace à côté*/
         tabClient[numClient].name = (char *) malloc(sizeof(char)*100);
         strcpy(tabClient[numClient].name,name);
         
@@ -197,8 +213,18 @@ int main(int argc, char *argv[]) {
         tabClient[numClient].connected = 1;
 
         pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+        
+        /*On enregistre la socket du client*/
+        tabClient[numClient].dSC = dSC;
+        tabClient[numClient].connected = 1;
+
+        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
 
         /*On avertie tout le monde de l'arriver du nouveau client*/
+        strcpy(name," a rejoint la communication\n");
+        All(numClient, name);
+
+        printf("%s\n", name);
         strcpy(name," a rejoint la communication\n");
         All(numClient, name);
 
@@ -229,14 +255,21 @@ int main(int argc, char *argv[]) {
         strcat(name," a rejoint la communication\n");
         sendMsg(dSC, name);
 
+
         /*On libère la mémoire de "name"*/
-        free(name);
+        free(name);/*Envoi au client le nombre de clients qui sont déjà connectés*/
         
+
+        /*On enregistre la socket du client*/
+        tabClient[numClient].dSC = dSC;
+        tabClient[numClient].connected = 1;
+            
+
         
         /*Crée un nouveau thread qui exécute la fonction broadcast en utilisant l'entier numClient comme argument.*/
         int threadClient = pthread_create(&tabThread[numClient],NULL,broadcast,(void *)numClient);
         if(threadClient == -1){
-            perror("Erreur lors de la création du thread");
+            perror("Erreur lors de la création du thread\n");
         }
     }
     sem_destroy(&semNbClient);

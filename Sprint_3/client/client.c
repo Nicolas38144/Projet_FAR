@@ -55,8 +55,6 @@ int isSendingFile(char *msg)
     return 0;
 }
 
-<<<<<<< HEAD
-=======
 
 
 /*------------------------------------------------FONCTION D'ENVOI D'UN FICHIER------------------------------------------------*/
@@ -71,7 +69,7 @@ void * sendingFile_th(void * fileNameParam){
 	struct sockaddr_in aS;
 	aS.sin_family = AF_INET;
 	inet_pton(AF_INET, arg1, &(aS.sin_addr));
-	aS.sin_port = htons(atoi(arg2+1)); //on passe au port d'après !!!!!!!!!
+	aS.sin_port = htons(atoi(arg2)+1); /*on passe au port d'après !!!!!!!!!*/
 
     /*Demander une connexion*/
 	socklen_t lgA = sizeof(struct sockaddr_in);
@@ -237,7 +235,6 @@ void *receiving_th(void *dSparam)
     return NULL;
 }
 
-<<<<<<< HEAD
 /*------------------------------------------------FONCTION D'ENVOI D'UN FICHIER------------------------------------------------*/
 void *sendingFile_th(void *fileNameParam)
 {
@@ -310,7 +307,7 @@ void *sendingFile_th(void *fileNameParam)
 }
 
 /*------------------------------------------------FONCTION DE RÉCEPTION D'UN FICHIER------------------------------------------------*/
-=======
+
 
 
 /*------------------------------------------------------- MAIN---------------------------------------*/
@@ -334,10 +331,10 @@ int main(int argc, char *argv[])
     printf("Socket Créé\n");
     struct sockaddr_in aS;
     aS.sin_family = AF_INET;
-<<<<<<< HEAD
+
     inet_pton(AF_INET, arg1, &(aS.sin_addr));
     aS.sin_port = htons(atoi(arg2));
-=======
+
     inet_pton(AF_INET,arg1,&(aS.sin_addr));
     aS.sin_port = htons(atoi(arg2));
 
@@ -345,12 +342,11 @@ int main(int argc, char *argv[])
     socklen_t lgA = sizeof(struct sockaddr_in);
     connect(dS, (struct sockaddr *) &aS, lgA);
     printf("Socket Connecté\n");
->>>>>>> 570d8388c1de6a8d90a0304585ec1ae9eb72c8f5
 
        /*Compte le nombre de clients connecté*/
     int nbClient = 0;
     if (recv(dS, &nbClient, sizeof(int), 0) == -1){ 
-        perror("erreur au recv du numClient");
+        perror("erreur au recv du numClient\n");
         exit(EXIT_FAILURE);
     }
     
@@ -375,22 +371,14 @@ int main(int argc, char *argv[])
         recv(dS,&availableName,sizeof(int),0);
     }
 
-    /*Enlever le caractere de saut de ligne (\n) a la fin de la chaine
-    size_t len = strlen(name);
-    if (name[len - 1] == '\n')
-    {
-        name[len - 1] = '\0';
-    }*/
-
-    printf("Votre pseudo choisi est : %s\n", name);
+    printf("Votre pseudo est : %s\n", name);
     printf("\n");
 
     /*Envoi du message*/
     sendMsg(dS, name);
 
     /*En attente d'un autre client*/
-    if (nbClient == 0)
-    {
+    if (nbClient == 0){
         printf("En attente d'un autre client\n");
 
         /*Reception du premier message informant de l'arrivée d'un autre client*/
@@ -401,23 +389,25 @@ int main(int argc, char *argv[])
         free(msg);
     }
 
-    /*--------------------------------------------------COMMUNICATION-----------------------------------------------*/
 
+
+
+
+
+    /*--------------------------------------------------COMMUNICATION-----------------------------------------------*/ 
     /*Création d'un thread d'envoi*/
     pthread_t thread_sendind;
     pthread_t thread_receiving;
 
     int thread1 = pthread_create(&thread_sendind, NULL, sending_th, (void *)(intptr_t)dS);
-    if (thread1 == -1)
-    {
-        perror("Error thread 1");
+    if (thread1 == -1) {
+        perror("Error thread 1\n");
     }
 
     /*Création d'un thread de reception*/
     int thread2 = pthread_create(&thread_receiving, NULL, receiving_th, (void *)(intptr_t)dS);
-    if (thread2 == -1)
-    {
-        perror("Error thread 2");
+    if (thread2 == -1) {
+        perror("Error thread 2\n");
     }
 
     /*Attente de la fin des threads*/

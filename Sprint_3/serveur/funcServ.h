@@ -23,4 +23,5 @@ extern void receiveFile(int dSC);
 extern int isNameAvailable(char * name);
 extern void send_integer(int dS, int number);
 extern void All(int numClient, char* message);
+
 #endif /* FUNCSERV_H */
