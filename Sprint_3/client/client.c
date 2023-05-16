@@ -18,7 +18,11 @@ int isFinished = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int save_dS;
 
+char * arg1;
+char * arg2;
 
+
+/*----------------------------------------------FONCTION DE VERIFICATION---------------------------------------------*/
 /*
 *   checkLogOut(char * msg) :
 *       Check si le client veut se déconnecter, il enverra au serveur le mot "fin"
@@ -36,9 +40,22 @@ void handle_sigint(int sig) {
     sendMsg(save_dS, "a quitté la conversation\n");
 }
 
+/*
+*   isSendingFile(char * msg)
+*       Check si le client souhaite envoyer un fichier
+*           char * msg : message du client à vérifier
+*           Retour : 1 si le client veut envoyer un fichier, 0 sinon
+*/
+int isSendingFile(char * msg){
+    if (strcmp(msg, "/file\n") == 0) {
+        return 1;
+    }
+    return 0;
+}
 
-/*----------------------------------------------FONCTION D'ENVOI---------------------------------------------*/
 
+
+/*----------------------------------------------FONCTION D'ENVOI D'UN MESSAGE---------------------------------------------*/
 /*
 *   sendMsg(int dS, const char * message) :
 *       Message envoyé à une socket et teste la conformité
@@ -73,6 +90,26 @@ void * sending_th(void * dSparam){
         isFinished = checkLogOut(m);        
         /*Envoi*/
         sendMsg(dS, m);
+
+        if (isSendingFile(m)){
+            int sys = system("ls ./FileClient");
+            if(sys == -1){
+                printf("commande echouée");
+            }
+
+            /*Saisie du nom du fichier au clavier*/
+            char * fileName = (char *) malloc(sizeof(char)*100);
+
+            printf("\nSaisissez le nom d'un fichier à envoyer : \n");
+            fgets(fileName, 100, stdin);
+            fileName = strtok(fileName, "\n");
+
+            pthread_t threadFile;
+            int thread = pthread_create(&threadFile, NULL, sendingFile_th, (void *)fileName);
+            if(thread==-1){
+                perror("error thread");
+            }
+        }
         free(m);
     }
     close(dS);
@@ -81,8 +118,7 @@ void * sending_th(void * dSparam){
 
 
 
-/*------------------------------------------------FONCTION DE RÉCEPTION------------------------------------------------*/
-
+/*------------------------------------------------FONCTION DE RÉCEPTION D'UN MESSAGE------------------------------------------------*/
 /*
 *   receiveMsg(int dS, char * buffer, ssize_t size) :
 *       Réceptionne un message envoyé à une socket et teste sa conformité
@@ -98,7 +134,6 @@ void receiveMsg(int dS, char * buffer, ssize_t size) {
     }
     buffer[num_bytes] = '\0';
 }
-
 
 
 /*
@@ -119,15 +154,89 @@ void *receiving_th(void *dSparam) {
 }
 
 
+
+/*------------------------------------------------FONCTION D'ENVOI D'UN FICHIER------------------------------------------------*/
+void * sendingFile_th(void * fileNameParam){
+
+    /*Création de la socket*/
+	long dSFile = socket(PF_INET, SOCK_STREAM, 0);
+    if (dSFile == -1) {
+        perror("Erreur lors de la création de la socket");
+        exit(EXIT_FAILURE);
+    }
+	struct sockaddr_in aS;
+	aS.sin_family = AF_INET;
+	inet_pton(AF_INET, arg1, &(aS.sin_addr));
+	aS.sin_port = htons(atoi(arg2)+1);
+
+    /*Demander une connexion*/
+	socklen_t lgA = sizeof(struct sockaddr_in);
+	int connectR = connect(dSFile, (struct sockaddr *) &aS, lgA);
+	if (connectR == -1){
+		perror("Error when connect");
+		exit(-1);
+	}
+
+    char * fileName = (char *)fileNameParam;
+    
+    /*Création du chemin pour trouver le fichier*/
+    char * pathToFile = (char *) malloc(sizeof(char)*130);
+    strcpy(pathToFile,"FileClient/");
+    strcat(pathToFile,fileName);
+
+    /*Ouverture et envoi du fichier*/
+    FILE * f = NULL;
+    f = fopen(pathToFile,"r");
+    if (f == NULL) {   
+        printf("Error! Could not open file\n"); 
+        exit(-1); 
+    }
+    char data[1024] = "";
+    int isEndSendFile = 0;
+
+    while(fgets(data, 1024, (FILE *)f) != NULL) {
+        if (send(dSFile, &isEndSendFile, sizeof(int), 0) == -1) {
+            perror("[-]Error in sending file.");
+            exit(1);
+        }
+        if (send(dSFile, data, sizeof(data), 0) == -1) {
+            perror("[-]Error in sending file.");
+            exit(1);
+        }
+        sleep(2);
+        bzero(data, 1024);
+    }
+
+    isEndSendFile = 1;
+    if (send(dSFile, &isEndSendFile, sizeof(int), 0) == -1) {
+        perror("[-]Error in sending file.");
+        exit(1);
+    }
+        
+    fclose(f);
+    free(pathToFile);
+    return NULL;
+}
+
+
+
+/*------------------------------------------------FONCTION DE RÉCEPTION D'UN FICHIER------------------------------------------------*/
+
+
+
+
+
 /*------------------------------------------------------- MAIN---------------------------------------*/
 int main(int argc, char *argv[])
 {
 
     /*Verification des paramètres*/
-    if (argc < 3)
-    {
+    if (argc != 3) {
         printf("Erreur : Lancez avec ./client <votre_ip> <votre_port> ");
     }
+
+    arg1 = argv[1];
+    arg2 = arg2[2];
 
     /*On vérifie si le client fait Ctrl+C*/
     signal(SIGINT,handle_sigint);
@@ -137,8 +246,8 @@ int main(int argc, char *argv[])
     printf("Socket Créé\n");
     struct sockaddr_in aS;
     aS.sin_family = AF_INET;
-    inet_pton(AF_INET,argv[1],&(aS.sin_addr)) ;
-    aS.sin_port = htons(atoi(argv[2])) ;
+    inet_pton(AF_INET,arg1,&(aS.sin_addr)) ;
+    aS.sin_port = htons(atoi(arg2)) ;
 
     /*Demander une connexion*/
     socklen_t lgA = sizeof(struct sockaddr_in) ;
