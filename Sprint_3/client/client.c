@@ -43,8 +43,7 @@ void handle_sigint(int sig) {
  *           char * msg : message du client à vérifier
  *           Retour : 1 si le client veut envoyer un fichier, 0 sinon
  */
-int isSendingFile(char *msg)
-{
+int isSendingFile(char *msg) {
     if (strcmp(msg, "/file\n") == 0)
     {
         return 1;
@@ -76,49 +75,75 @@ void * sendingFile_th(void * fileNameParam){
 		exit(-1);
 	}
     printf("Socket Connecté\n");
+    
+    FILE * f = (FILE *)fileNameParam;
 
-    char * fileName = (char *)fileNameParam;
+    char data[1024] = "";
+    int isEndSendFile = -1;
+    int descripteur = fileno(f);
+
+    while(isEndSendFile != 0) {
+        isEndSendFile = read(descripteur, data, 1023);
+        data[1023]='\0';
+        /*sendingInt(dSFile, isEndSendFile);*/
+        if(isEndSendFile != 0){
+            if (send(dSFile, data, sizeof(data), 0) == -1) {
+                perror("[-]Error in sending file.");
+                exit(1);
+            }
+        }
+        memset(data, 0, sizeof(isEndSendFile));
+    } 
+        
+    printf("\n** Fichier envoyé **\n");
+    fclose(f);
+    close(dSFile);
+    return NULL;
+}
+
+
+void sendingFile(int dS){
+    printf("\n ----- Listes de fichiers disponibles à l'envoi ----- \n");
+
+    /*Affichage des fichiers disponibles à l'envoi*/
+    int sys = system("ls --format=single-column ./FileClientToSend");
+    if(sys == -1){
+        printf("Commande echouée");
+    }
+
+    /*Saisie du nom du fichier au clavier*/
+    char * fileName = (char *) malloc(sizeof(char)*100);
+    printf("\n --- Saisissez le nom d'un fichier à envoyer : \n");
+    fgets(fileName, 100, stdin);
+    fileName = strtok(fileName, "\n");
     
     /*Création du chemin pour trouver le fichier*/
     char * pathToFile = (char *) malloc(sizeof(char)*130);
-    strcpy(pathToFile,"FileClient/");
+    strcpy(pathToFile,"FileClientToSend/");
     strcat(pathToFile,fileName);
 
     /*Ouverture et envoi du fichier*/
     FILE * f = NULL;
     f = fopen(pathToFile,"r");
-    if (f == NULL) {   
-        printf("Error! Could not open file\n"); 
-        exit(-1); 
+    if (f == NULL) { 
+        char * error = "error";
+        sendMsg(dS, error);  
+        printf("Erreur! Fichier inconnu\n"); 
     }
-    char data[1024] = "";
-    int isEndSendFile = 0;
-
-    while(fgets(data, 1024, (FILE *)f) != NULL) {
-        if (send(dSFile, &isEndSendFile, sizeof(int), 0) == -1) {
-            perror("[-]Error 1 in sending file.");
-            exit(1);
+    else {
+        /*Envoi du nom du fichier au serveur*/
+        sendMsg(dS,fileName);
+        /*Création du thread d'envoi de fichier*/
+        pthread_t threadFile;
+        int thread = pthread_create(&threadFile, NULL, sendingFile_th, (void *)f);
+        if(thread==-1){
+            perror("error thread");
         }
-        if (send(dSFile, data, sizeof(data), 0) == -1) {
-            perror("[-]Error 2 in sending file.");
-            exit(1);
-        }
-        sleep(2);
-        memset(data, 0, sizeof(data));
-        printf("%d",5);
-        /*bzero(data, 1024);*/
     }
-
-    isEndSendFile = 1;
-    if (send(dSFile, &isEndSendFile, sizeof(int), 0) == -1) {
-        perror("[-]Error in sending file.");
-        exit(1);
-    }
-        
-    fclose(f);
     free(pathToFile);
-    return NULL;
+    free(fileName);
 }
+
 
 /*------------------------------------------------FONCTION DE RÉCEPTION D'UN FICHIER------------------------------------------------*/
 
@@ -170,26 +195,9 @@ void *sending_th(void *dSparam)
         /*Envoi*/
         sendMsg(dS, m);
 
-        if (isSendingFile(m))
-        {
-            int sys = system("ls ./FileClient");
-            if (sys == -1) {
-                printf("commande echouée");
-            }
-
-            /*Saisie du nom du fichier au clavier*/
-            char *fileName = (char *)malloc(sizeof(char) * 100);
-
-            printf("\nSaisissez le nom d'un fichier à envoyer : \n");
-            fgets(fileName, 100, stdin);
-            fileName = strtok(fileName, "\n");
-
-            pthread_t threadFile;
-            int thread = pthread_create(&threadFile, NULL, sendingFile_th, (void *)fileName);
-            if (thread == -1)
-            {
-                perror("error thread");
-            }
+        /*Si on envoie un fichier*/
+        if (isSendingFile(m)) {
+            sendingFile(dS);
         }
         free(m);
     }
@@ -304,8 +312,6 @@ int main(int argc, char *argv[])
     printf("Votre pseudo est : %s\n", name);
     printf("\n");
 
-    /*Envoi du message*/
-    /*sendMsg(dS, name);*/
 
     /*En attente d'un autre client*/
     if (nbClient == 0){
@@ -318,9 +324,6 @@ int main(int argc, char *argv[])
 
         free(msg);
     }
-
-
-
 
 
 
