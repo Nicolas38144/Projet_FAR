@@ -25,18 +25,15 @@ char *arg2;
  *       Check si le client veut se déconnecter, il enverra au serveur le mot "fin"
  *       char * msg : Le message du client
  */
-int checkLogOut(char *msg)
-{
-    if (strcmp(msg, "/logout\n") == 0)
-    {
+int checkLogOut(char *msg) {
+    if (strcmp(msg, "/logout\n") == 0) {
         strcpy(msg, "a quitté la conversation\n");
         return 1;
     }
     return 0;
 }
 
-void handle_sigint(int sig)
-{
+void handle_sigint(int sig) {
     sendMsg(save_dS, "a quitté la conversation\n");
 }
 
@@ -130,6 +127,10 @@ void * sendingFile_th(void * fileNameParam){
 
 
 
+
+
+
+
 /*----------------------------------------------FONCTION D'ENVOI D'UN MESSAGE---------------------------------------------*/
 /*
  *   sendMsg(int dS, const char * message) :
@@ -172,8 +173,7 @@ void *sending_th(void *dSparam)
         if (isSendingFile(m))
         {
             int sys = system("ls ./FileClient");
-            if (sys == -1)
-            {
+            if (sys == -1) {
                 printf("commande echouée");
             }
 
@@ -235,78 +235,8 @@ void *receiving_th(void *dSparam)
     return NULL;
 }
 
-/*------------------------------------------------FONCTION D'ENVOI D'UN FICHIER------------------------------------------------*/
-void *sendingFile_th(void *fileNameParam)
-{
 
-    /*Création de la socket*/
-    long dSFile = socket(PF_INET, SOCK_STREAM, 0);
-    if (dSFile == -1)
-    {
-        perror("Erreur lors de la création de la socket");
-        exit(EXIT_FAILURE);
-    }
-    struct sockaddr_in aS;
-    aS.sin_family = AF_INET;
-    inet_pton(AF_INET, arg1, &(aS.sin_addr));
-    aS.sin_port = htons(atoi(arg2) + 1);
 
-    /*Demander une connexion*/
-    socklen_t lgA = sizeof(struct sockaddr_in);
-    int connectR = connect(dSFile, (struct sockaddr *)&aS, lgA);
-    if (connectR == -1)
-    {
-        perror("Error when connect");
-        exit(-1);
-    }
-
-    char *fileName = (char *)fileNameParam;
-
-    /*Création du chemin pour trouver le fichier*/
-    char *pathToFile = (char *)malloc(sizeof(char) * 130);
-    strcpy(pathToFile, "FileClient/");
-    strcat(pathToFile, fileName);
-
-    /*Ouverture et envoi du fichier*/
-    FILE *f = NULL;
-    f = fopen(pathToFile, "r");
-    if (f == NULL)
-    {
-        printf("Error! Could not open file\n");
-        exit(-1);
-    }
-    char data[1024] = "";
-    int isEndSendFile = 0;
-
-    while (fgets(data, 1024, (FILE *)f) != NULL)
-    {
-        if (send(dSFile, &isEndSendFile, sizeof(int), 0) == -1)
-        {
-            perror("[-]Error in sending file.");
-            exit(1);
-        }
-        if (send(dSFile, data, sizeof(data), 0) == -1)
-        {
-            perror("[-]Error in sending file.");
-            exit(1);
-        }
-        sleep(2);
-        bzero(data, 1024);
-    }
-
-    isEndSendFile = 1;
-    if (send(dSFile, &isEndSendFile, sizeof(int), 0) == -1)
-    {
-        perror("[-]Error in sending file.");
-        exit(1);
-    }
-
-    fclose(f);
-    free(pathToFile);
-    return NULL;
-}
-
-/*------------------------------------------------FONCTION DE RÉCEPTION D'UN FICHIER------------------------------------------------*/
 
 
 
@@ -375,7 +305,7 @@ int main(int argc, char *argv[])
     printf("\n");
 
     /*Envoi du message*/
-    sendMsg(dS, name);
+    /*sendMsg(dS, name);*/
 
     /*En attente d'un autre client*/
     if (nbClient == 0){

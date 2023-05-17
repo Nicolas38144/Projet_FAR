@@ -177,30 +177,10 @@ int main(int argc, char *argv[]) {
             availableName = isNameAvailable(name);
             printf("Pseudo non disponible\n");
         }
-
-        /*pseudo valide*/
-        send_integer(dSC, availableName);
-        /*receiveMsg(dSC, name, sizeof(char)*100);*/
-
-        int availableName = 0; /*false*/
-
-        while(!availableName){
-            send_integer(dSC,availableName);
-            receiveMsg(dSC, name, sizeof(char)*100);
-            name = strtok(name, "\n");
-            availableName = isNameAvailable(name);
-            printf("Pseudo non disponible\n");
-        }
-
         /*pseudo valide*/
         send_integer(dSC, availableName);
 
 
-        /*Enregistrement du nom (=name) du client*/
-
-        pthread_mutex_lock(&lock); /*Début d'une section critique*/
-
-        /*name = strtok(name, "\n");permet de ne garder que le nom sans tout l'espace à côté*/
 
         pthread_mutex_lock(&lock); /*Début d'une section critique*/
 
@@ -214,34 +194,6 @@ int main(int argc, char *argv[]) {
 
         pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
         
-        /*On enregistre la socket du client*/
-        tabClient[numClient].dSC = dSC;
-        tabClient[numClient].connected = 1;
-
-        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
-
-        /*On avertie tout le monde de l'arriver du nouveau client*/
-        strcpy(name," a rejoint la communication\n");
-        All(numClient, name);
-
-        printf("%s\n", name);
-        strcpy(name," a rejoint la communication\n");
-        All(numClient, name);
-
-        printf("%s\n", name);
-
-
-        /*On libère la mémoire de "name"*/
-        free(name);/*Envoi au client le nombre de clients qui sont déjà connectés*/
-        
-
-
-        /*On enregistre la socket du client*/
-        tabClient[numClient].dSC = dSC;
-        tabClient[numClient].connected = 1;
-            
-
-        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
 
         /*On avertie tout le monde de l'arriver du nouveau client*/
         strcpy(name," a rejoint la communication\n");
@@ -252,18 +204,6 @@ int main(int argc, char *argv[]) {
 
         /*On libère la mémoire de "name"*/
         free(name);/*On avertie tout le monde de l'arriver du nouveau client*/
-        strcat(name," a rejoint la communication\n");
-        sendMsg(dSC, name);
-
-
-        /*On libère la mémoire de "name"*/
-        free(name);/*Envoi au client le nombre de clients qui sont déjà connectés*/
-        
-
-        /*On enregistre la socket du client*/
-        tabClient[numClient].dSC = dSC;
-        tabClient[numClient].connected = 1;
-            
 
         
         /*Crée un nouveau thread qui exécute la fonction broadcast en utilisant l'entier numClient comme argument.*/
