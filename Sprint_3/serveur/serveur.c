@@ -68,30 +68,7 @@ void * broadcast(void * numeroClient){
 
             /*Libération de la mémoire du message envoyé*/
             free(msgToSend);
-        }
-        
-        
-        
-        /*****************************************/
-        /* si la commande est /File */
-        /*else if (isSendingFille(msgReceived) == 1){
-             /*Reception du nom du fichier à recevoir*/
-        /*    char * fileName = (char *) malloc(sizeof(char)*30);
-            receiveMsg(tabClient[numClient].dSC, fileName, sizeof(char)*30);
-            printf("\nNom du fichier à recevoir: %s \n", fileName);
-
-            fileName = strtok(fileName, "\n");
-
-            /*Création du thread pour gérer la reception du fichier*/
-        /*    pthread_t threadFile;
-            int thread = pthread_create(&threadFile, NULL, receivingFile_th, (void *)fileName);
-            if(thread==-1){
-                perror("error thread");
-            }
-        }*/
-        /*****************************************/
-
-        
+        }        
         /*Libération de la mémoire du message reçu*/
         free(msgReceived);
     }

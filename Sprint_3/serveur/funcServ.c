@@ -292,7 +292,7 @@ void * receiveFile_th(void * fileNameParam){
 
     /*Création du fichier et du buffer pour recevoir les données*/
     char buffer[1024];
-    int f = open(pathToFile, O_WRONLY |  O_CREAT, 0666);
+    int f = open(pathToFile, O_WRONLY |  O_CREAT | O_RDONLY | O_TRUNC, 0666);
     if(f == -1){
         printf("erreur au open");
         exit(1);
@@ -301,8 +301,11 @@ void * receiveFile_th(void * fileNameParam){
 
     /*Reception*/
     while(nbBytes > 0){
-        int bytesRead = recv(dSCFile, buffer, 1024, 0);
-        write(f, buffer,nbBytes);
+        int bytesRead = recv(dSCFile, buffer, 1024, MSG_WAITALL);
+        if (bytesRead <= 0) {
+            break;
+        }
+        write(f, buffer,bytesRead);
         nbBytes = receivingInt(dSCFile);
         nbBytes -= bytesRead;
         memset(buffer, 0, 1024);

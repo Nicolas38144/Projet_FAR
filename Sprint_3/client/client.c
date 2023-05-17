@@ -51,6 +51,14 @@ int isSendingFile(char *msg) {
     return 0;
 }
 
+void sendingInt(int dS, int number){
+    int sendR = send(dS, &number, sizeof(int), 0);
+    if (sendR == -1){
+        perror("erreur au send");
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 
 /*------------------------------------------------FONCTION D'ENVOI D'UN FICHIER------------------------------------------------*/
@@ -74,8 +82,8 @@ void * sendingFile_th(void * fileNameParam){
 		perror("Error when connect");
 		exit(-1);
 	}
-    printf("Socket Connecté\n");
     
+
     FILE * f = (FILE *)fileNameParam;
 
     char data[1024] = "";
@@ -85,17 +93,17 @@ void * sendingFile_th(void * fileNameParam){
     while(isEndSendFile != 0) {
         isEndSendFile = read(descripteur, data, 1023);
         data[1023]='\0';
-        /*sendingInt(dSFile, isEndSendFile);*/
+        sendingInt(dSFile, isEndSendFile);
         if(isEndSendFile != 0){
             if (send(dSFile, data, sizeof(data), 0) == -1) {
                 perror("[-]Error in sending file.");
-                exit(1);
+                exit(EXIT_FAILURE);
             }
         }
         memset(data, 0, sizeof(isEndSendFile));
     } 
         
-    printf("\n** Fichier envoyé **\n");
+    printf("\n** Fichier envoyé **\n\n");
     fclose(f);
     close(dSFile);
     return NULL;
@@ -133,6 +141,7 @@ void sendingFile(int dS){
     else {
         /*Envoi du nom du fichier au serveur*/
         sendMsg(dS,fileName);
+
         /*Création du thread d'envoi de fichier*/
         pthread_t threadFile;
         int thread = pthread_create(&threadFile, NULL, sendingFile_th, (void *)f);
