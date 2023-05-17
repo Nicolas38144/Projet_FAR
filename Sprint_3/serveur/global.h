@@ -30,7 +30,8 @@ extern pthread_t tabThread[MAX_CLIENT];
 extern int nbConnectedClient;
 extern int tabThreadToKill[MAX_CLIENT];
 extern pthread_mutex_t lock;
-
+extern long dSFile;
+extern char * arg1;
 #endif /* GLOBALS_H */
 
 

@@ -1,5 +1,6 @@
 #include "global.h"
 #include "funcServ.h"
+#include <fcntl.h>
 
 #define MAX_CLIENT 3
 #define MAX_MSG 150
@@ -126,36 +127,23 @@ int isSendingFille(char * msg){
 }
 
 void receiveFile(int dSC) {
-    /* Réception du nom du fichier à recevoir */
-    char fileName[30];
-    receiveMsg(dSC, fileName, sizeof(char) * 30);
+    /*Reception du nom du fichier à recevoir*/
+    char * fileName = (char *) malloc(sizeof(char)*30);
+    receiveMsg(dSC, fileName, sizeof(char)*30);
+
     printf("\nNom du fichier à recevoir: %s \n", fileName);
-
-    fileName[strcspn(fileName, "\n")] = '\0';  // Remove newline character from fileName
-
-    /* Création du chemin pour accéder au fichier */
-    char pathToFile[130];
-    strcpy(pathToFile, "FileServeur/");
-    strcat(pathToFile, fileName);
-
-    /* Ouverture du fichier en mode binaire pour éviter les problèmes d'encodage */
-    FILE* fp;
-    fp = fopen(pathToFile, "wb");
-
-    /* Booléen pour contrôler la fin de la réception du fichier */
-    int isEndRecvFile;
-    recv(dSC, &isEndRecvFile, sizeof(int), 0);
-
-    /* Réception et écriture dans le fichier */
-    char buffer[1024];
-    size_t bytesRead;
-    while (!isEndRecvFile) {
-        bytesRead = recv(dSC, buffer, 1024, 0);
-        fwrite(buffer, sizeof(char), bytesRead, fp);
-        recv(dSC, &isEndRecvFile, sizeof(int), 0);
-        memset(buffer, 0, sizeof(buffer));
+    if (strcmp(fileName,"error") == 0) {
+        printf("Nom de fichier incorrect\n");
     }
-    fclose(fp);
+    else {
+        fileName = strtok(fileName, "\n");
+        /*Création du thread pour gérer la reception du fichier*/
+        pthread_t threadFile;
+        int thread = pthread_create(&threadFile, NULL, receiveFile_th, (void *)fileName);
+        if(thread==-1){
+            perror("error thread");
+        }
+    }     
 }
 
 
@@ -165,9 +153,9 @@ int checkIsCommand(char * msg, int dS) {
         if (strcmp(msg, "/help\n") == 0) {
             helpCommand(dS);
         }
-        /*else if (strcmp(msg, "/NOM_COMMANDE") == 0) {
-            NOM_COMMANDE();
-        }*/
+        else if (strcmp(msg, "/file\n") == 0) {
+            receiveFile(dS);
+        }
         return 1;
     }
     return 0;
@@ -283,4 +271,99 @@ void All(int numClient, char* message) {
     }
 
     /*pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+}
+
+void * receiveFile_th(void * fileNameParam){
+
+    long dSCFile;
+    /*Accepter une connexion*/
+    dSCFile = acceptConnection(dSFile);
+
+    char * fileName = (char *)fileNameParam;
+
+    /*Création d'un fichier au même nom et reception du contenu du fichier*/
+
+    /*Création du chemin pour enregister le fichier*/ 
+    char * pathToFile = (char *) malloc(sizeof(char)*130);
+    strcpy(pathToFile,"FileServeur/");
+    strcat(pathToFile,fileName);
+
+    printf("Je reçois le fichier %s du client le socket %ld\n",fileName,dSFile);
+
+    /*Création du fichier et du buffer pour recevoir les données*/
+    char buffer[1024];
+    int f = open(pathToFile, O_WRONLY |  O_CREAT, 0666);
+    if(f == -1){
+        printf("erreur au open");
+        exit(1);
+    }
+    int nbBytes = receivingInt(dSCFile);
+
+    /*Reception*/
+    while(nbBytes > 0){
+        int bytesRead = recv(dSCFile, buffer, 1024, 0);
+        write(f, buffer,nbBytes);
+        nbBytes = receivingInt(dSCFile);
+        nbBytes -= bytesRead;
+        memset(buffer, 0, 1024);
+    }
+    printf("\n**Fichier reçu**\n");
+    close(f);
+    close(dSCFile);
+    return NULL;
+}
+
+
+
+int createSocket(int port) {
+    /*Création de la socket*/
+	int dS = socket(PF_INET, SOCK_STREAM, 0);
+    if (dS == -1) {
+        perror("La création de la socket a échoué\n");
+        exit(EXIT_FAILURE);
+    }
+
+	struct sockaddr_in ad;
+	ad.sin_family = AF_INET;
+	ad.sin_addr.s_addr = INADDR_ANY;
+	ad.sin_port = htons(port);
+
+	/*Nommage de la socket*/
+	int bindResult = bind(dS, (struct sockaddr*)&ad, sizeof(ad));
+	if (bindResult == -1) {
+		perror("Erreur au bind");
+		exit(EXIT_FAILURE);
+	}
+
+	/*Passer la socket en mode écoute*/
+	int listenResult = listen(dS, MAX_CLIENT);
+	if (listenResult == -1) {
+		perror("Erreur au listen");
+		exit(EXIT_FAILURE);
+	}
+    
+    return dS;
+};
+
+
+int acceptConnection(int dS){
+    int dSC;
+    struct sockaddr_in aC;
+    socklen_t lg = sizeof(struct sockaddr_in);
+    dSC = accept(dS, (struct sockaddr*) &aC,&lg);
+    if (dSC == -1){
+        perror("Erreur au accept");
+        exit(-1);
+    }
+    return dSC;
+}
+
+
+int receivingInt(long dS) {
+    int number;
+    if(recv(dS, &number, sizeof(int), 0) == -1){ /*vérification de la valeur de retour*/
+        perror("erreur au recv d'un int");
+        exit(-1);
+    }
+    return number;
 }

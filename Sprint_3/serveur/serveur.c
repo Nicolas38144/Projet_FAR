@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -53,6 +54,7 @@ void * broadcast(void * numeroClient){
         /*Le client veut-il se log out ?*/
         isFinished = checkLogOut(msgReceived);
         isCommand = checkIsCommand(msgReceived, tabClient[numClient].dSC);
+        /*Si ce n'est ni une commande ni un message privé*/
         if (isCommand == 0 && condition_a == 0) {
             /*Ajout du nom (=name) de l'expéditeur devant le message à envoyer*/
             char * msgToSend = (char *) malloc(sizeof(char)*200);
@@ -67,10 +69,28 @@ void * broadcast(void * numeroClient){
             /*Libération de la mémoire du message envoyé*/
             free(msgToSend);
         }
+        
+        
+        
+        /*****************************************/
         /* si la commande est /File */
-        if (isSendingFille(msgReceived) == 1){
-            receiveFile(tabClient[numClient].dSC);
-        }
+        /*else if (isSendingFille(msgReceived) == 1){
+             /*Reception du nom du fichier à recevoir*/
+        /*    char * fileName = (char *) malloc(sizeof(char)*30);
+            receiveMsg(tabClient[numClient].dSC, fileName, sizeof(char)*30);
+            printf("\nNom du fichier à recevoir: %s \n", fileName);
+
+            fileName = strtok(fileName, "\n");
+
+            /*Création du thread pour gérer la reception du fichier*/
+        /*    pthread_t threadFile;
+            int thread = pthread_create(&threadFile, NULL, receivingFile_th, (void *)fileName);
+            if(thread==-1){
+                perror("error thread");
+            }
+        }*/
+        /*****************************************/
+
         
         /*Libération de la mémoire du message reçu*/
         free(msgReceived);
@@ -92,6 +112,7 @@ void * broadcast(void * numeroClient){
 */
 int main(int argc, char *argv[]) {
 
+    arg1 = argv[1];
     sem_init(&semNbClient, 0, MAX_CLIENT);
 
     /*Verification des paramètres*/
@@ -100,37 +121,15 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
     }
 
+    /*Création des sockets*/
+	int dS = createSocket(atoi(arg1));
+    dSFile = createSocket(atoi(arg1)+1);
+
+
     int i;
     for(i=0;i<MAX_CLIENT;i++) {
         tabThreadToKill[i]=0;
     }
-
-	/*Création de la socket*/
-	int dS = socket(PF_INET, SOCK_STREAM, 0);
-    if (dS == -1) {
-        perror("La création de la socket a échoué\n");
-        exit(EXIT_FAILURE);
-    }
-
-	struct sockaddr_in ad;
-	ad.sin_family = AF_INET;
-	ad.sin_addr.s_addr = INADDR_ANY;
-	ad.sin_port = htons(atoi(argv[1]));
-
-	/*Nommage de la socket*/
-	int bindResult = bind(dS, (struct sockaddr*)&ad, sizeof(ad));
-	if (bindResult == -1) {
-		perror("Erreur au bind");
-		exit(EXIT_FAILURE);
-	}
-
-	/*Passer la socket en mode écoute*/
-	int listenResult = listen(dS, MAX_CLIENT);
-	if (listenResult == -1) {
-		perror("Erreur au listen");
-		exit(EXIT_FAILURE);
-	}
-
 
     /*Pour faire fonctionner le serveur en continue*/
     while(1) {

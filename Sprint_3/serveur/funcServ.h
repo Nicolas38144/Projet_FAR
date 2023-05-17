@@ -23,5 +23,11 @@ extern void receiveFile(int dSC);
 extern int isNameAvailable(char * name);
 extern void send_integer(int dS, int number);
 extern void All(int numClient, char* message);
+/*extern void * sendingFile_th(void * fpParam);
+extern void sendFile(int dS, FILE* fp);*/
+extern int createSocket(int port);
+extern int acceptConnection(int dS);
+extern void * receiveFile_th( void * fileNameParam);
+extern int receivingInt(long dS);
 
 #endif /* FUNCSERV_H */
