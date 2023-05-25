@@ -1,6 +1,10 @@
 #include "global.h"
 #include "funcServ.h"
+#include <dirent.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define MAX_CLIENT 3
 #define MAX_MSG 150
@@ -115,16 +119,15 @@ void helpCommand(int dS) {
 }
 
 /* 
-*   isSendingFille(char * msg) :
+*   isSendingFile(char * msg) :
 *       Regarde si le client a envoyé la commande /File
 */
-
-int isSendingFille(char * msg){
+/*int isSendingFille(char * msg){
     if (strcasecmp(msg, "/File") == 0){
         return 1;
     }
     return 0;
-}
+}*/
 
 void receiveFile(int dSC) {
     /*Reception du nom du fichier à recevoir*/
@@ -147,59 +150,121 @@ void receiveFile(int dSC) {
     }  
 }
 
+void sendFile(int dSC) {
+
+    /*Envoyer les noms des fichiers du dossier*/
+    DIR *dir;
+    struct dirent *ent;
+    char buffer[4096];
+    int buffer_pos = 0;
+
+    // Ouvrir le répertoire
+    dir = opendir("./FileServeur");
+    if (dir == NULL) {
+        perror("Erreur lors de l'ouverture du repertoire");
+        exit(0);
+    }
+
+    // Lire les fichiers du répertoire
+    while ((ent = readdir(dir)) != NULL) {
+        // Ignorer les entrées spéciales . et ..
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
+            continue;
+        }
+        // Concaténer le nom du fichier dans le buffer
+        strncpy(buffer + buffer_pos, ent->d_name, 256 - 1);
+        buffer_pos += strlen(ent->d_name);
+        buffer[buffer_pos++] = '\n'; // Ajouter un espace entre les noms de fichiers
+    }
+    // Fermer le répertoire
+    closedir(dir);
+    // Terminer la chaîne de caractères dans le buffer
+    buffer[buffer_pos] = '\0';
+    // Afficher tous les noms de fichiers concaténés
+    printf("Noms des fichiers :\n%s\n", buffer);
+
+
+    /*Reception du nom du fichier à recevoir*/
+    /*char * fileName = (char *) malloc(sizeof(char)*30);
+    receiveMsg(dSC, fileName, sizeof(char)*30);
+
+    printf("\nNom du fichier à recevoir: %s \n", fileName);
+    if (strcmp(fileName,"error") == 0) {
+        printf("Nom de fichier incorrect\n");
+    }
+    else {
+        printf("%s", fileName);
+        fileName = strtok(fileName, "\n");*/
+        /*Création du thread pour gérer la reception du fichier*/
+        /*pthread_t threadFile;
+        int thread = pthread_create(&threadFile, NULL, receivingFile_th, (void *)fileName);
+        if(thread==-1){
+            perror("error thread");
+        }
+    }  */
+}
+
 
 
 int checkIsCommand(char * msg, int dS) {
     if (msg[0] == '/') {
         if (strcmp(msg, "/help\n") == 0) {
             helpCommand(dS);
+            return 1;
         }
-        else if (strcmp(msg, "/file\n") == 0) {
+        else if (strcmp(msg, "/upload\n") == 0) {
             receiveFile(dS);
+            return 1;
         }
-        return 1;
+        else if (strcmp(msg, "/download\n") == 0) {
+            sendFile(dS);
+            return 1;
+        }
+        else {
+            return 0;
+        }  
     }
     return 0;
 }
+
+
 /*
 *   void sendingPrivate(int numClient, char *msgReceived) :
 *       envoie un message privé au client
 */
-
 void sendingPrivate(int numClient, char *msgReceived) {
-  /*Récupération du nom du destinataire*/
-  char *nameDest = strtok(msgReceived, " ");
-  nameDest++;
-  /* Suppression du caractère @*/
-  /*Récupération du message*/
-  char *token = strtok(NULL, "");
-  char * msgToSend = (char *) malloc(sizeof(char)*200);
-  char * nameSender = tabClient[numClient].name; 
-  strcat(msgToSend, "[Message Privé] ");
-  strcat(msgToSend, nameSender);
-  strcat(msgToSend, " : ");
-  strcat(msgToSend, token);
-  /*Recherche du destinataire dans le tableau des clients connectés*/
-  int destFound = 0;
-  int i;
-  for (i = 0; i < MAX_CLIENT; i++) {
-    if (tabClient[i].connected == 1 && strcmp(nameDest, tabClient[i].name) == 0) {
-      /*Envoi du message au destinataire*/
-      int sendResult = send(tabClient[i].dSC, msgToSend, strlen(msgToSend) + 1, 0);
-      /*Gestion s'il y a une erreur*/
-      if (sendResult == -1) {
-        perror("Erreur lors de l'envoi du message");
-        exit(EXIT_FAILURE);
-      }
-
-      destFound = 1;
-      break;
+    /*Récupération du nom du destinataire*/
+    char *nameDest = strtok(msgReceived, " ");
+    nameDest++;
+    /* Suppression du caractère @*/
+    /*Récupération du message*/
+    char *token = strtok(NULL, "");
+    char * msgToSend = (char *) malloc(sizeof(char)*200);
+    char * nameSender = tabClient[numClient].name; 
+    strcat(msgToSend, "[Message Privé] ");
+    strcat(msgToSend, nameSender);
+    strcat(msgToSend, " : ");
+    strcat(msgToSend, token);
+    /*Recherche du destinataire dans le tableau des clients connectés*/
+    int destFound = 0;
+    int i;
+    for (i = 0; i < MAX_CLIENT; i++) {
+        if (tabClient[i].connected == 1 && strcmp(nameDest, tabClient[i].name) == 0) {
+            /*Envoi du message au destinataire*/
+            int sendResult = send(tabClient[i].dSC, msgToSend, strlen(msgToSend) + 1, 0);
+            /*Gestion s'il y a une erreur*/
+            if (sendResult == -1) {
+                perror("Erreur lors de l'envoi du message");
+                exit(EXIT_FAILURE);
+            } 
+            destFound = 1;
+            break;
+        }
     }
-  }
     /*Destinataire non trouvé*/
-  if (destFound == 0) {
-    printf("Le destinataire n'a pas été trouvé.\n");
-  }
+    if (destFound == 0) {
+        printf("Le destinataire n'a pas été trouvé.\n");
+    }
 }
 
 void killThread() {
@@ -216,10 +281,11 @@ void killThread() {
 
 
 /* 
- * Fonction qui vÃ©rifie si le pseudo saisi n'est pas dÃ©jÃ  utilisÃ© 
- * Retour: 1 si le pseudo n'est pas encore utilisÃ©, 0 sinon 
- */
-int isNameAvailable(char * name){
+*   int isNameAvailable(char * name)
+*       Fonction qui vérifie si le pseudo saisi n'est pas déjà  utilisé
+*       Retour: 1 si le pseudo n'est pas encore utilisé, 0 sinon 
+*/
+int isNameAvailable(char * name) {
     int i= 0;
     int available = 1;
 
@@ -258,37 +324,27 @@ void addName(char *message, char *name) {
 
 
 void All(int numClient, char* message) {
-
     /*pthread_mutex_lock(&lock); /*Début d'une section critique*/
-
     int dSC = tabClient[numClient].dSC;
-
     addName(message, tabClient[numClient].name);
-
     for (int i = 0; i < MAX_CLIENT; i++) {
         if (tabClient[i].connected && dSC == tabClient[i].dSC) {
             sendMsg(tabClient[i].dSC, message);
         }
     }
-
     /*pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
 }
 
 void * receiveFile_th(void * fileNameParam){
-
     long dSCFile;
     /*Accepter une connexion*/
     dSCFile = acceptConnection(dSFile);
-
     char * fileName = (char *)fileNameParam;
-
     /*Création d'un fichier au même nom et reception du contenu du fichier*/
-
     /*Création du chemin pour enregister le fichier*/ 
     char * pathToFile = (char *) malloc(sizeof(char)*130);
     strcpy(pathToFile,"FileServeur/");
     strcat(pathToFile,fileName);
-
     /*Création du fichier et du buffer pour recevoir les données*/
     char buffer[1024];
     FILE * f = fopen(pathToFile, "wb");
