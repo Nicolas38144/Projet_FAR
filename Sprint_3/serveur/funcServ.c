@@ -136,6 +136,7 @@ void receiveFile(int dSC) {
         printf("Nom de fichier incorrect\n");
     }
     else {
+        printf("%s", fileName);
         fileName = strtok(fileName, "\n");
         /*Création du thread pour gérer la reception du fichier*/
         pthread_t threadFile;
@@ -143,7 +144,7 @@ void receiveFile(int dSC) {
         if(thread==-1){
             perror("error thread");
         }
-    }     
+    }  
 }
 
 
@@ -292,26 +293,31 @@ void * receiveFile_th(void * fileNameParam){
 
     /*Création du fichier et du buffer pour recevoir les données*/
     char buffer[1024];
-    int f = open(pathToFile, O_WRONLY |  O_CREAT | O_RDONLY | O_TRUNC, 0666);
-    if(f == -1){
+    FILE * f = fopen(pathToFile, "wb");
+    if((long int)f ==(long int) -1){
         printf("erreur au open");
         exit(1);
     }
-    int nbBytes = receivingInt(dSCFile);
-
+    int nbBytesRead = receivingInt(dSCFile);
+    printf("Nb reçus  : %d\n", nbBytesRead);
     /*Reception*/
-    while(nbBytes > 0){
-        int bytesRead = recv(dSCFile, buffer, 1024, MSG_WAITALL);
-        if (bytesRead <= 0) {
+    while(nbBytesRead > 0) {
+        int res = recv(dSCFile, buffer, nbBytesRead, 0);
+        if (res <= 0) {
+            printf("Erreur de réception de la data");
             break;
         }
-        write(f, buffer,bytesRead);
-        nbBytes = receivingInt(dSCFile);
-        nbBytes -= bytesRead;
-        memset(buffer, 0, 1024);
+        fwrite(buffer, sizeof(char), nbBytesRead, f);
+        nbBytesRead = receivingInt(dSCFile);
+        if (nbBytesRead < 0){ 
+            printf("Erreur de reception de la taille");
+            break;
+        }
+        printf("Nb reçus  : %d\n", nbBytesRead);
+        //memset(buffer, 0, nbBytesRead);
     }
     printf("\n**Fichier reçu**\n");
-    close(f);
+    fclose(f);
     close(dSCFile);
     return NULL;
 }

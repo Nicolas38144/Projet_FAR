@@ -79,7 +79,7 @@ void * sendingFile_th(void * fileNameParam){
 	socklen_t lgA = sizeof(struct sockaddr_in);
 	int connectR = connect(dSFile, (struct sockaddr *) &aS, lgA);
 	if (connectR == -1){
-		perror("Error when connect");
+		perror("Error when connect\n");
 		exit(-1);
 	}
     
@@ -87,20 +87,26 @@ void * sendingFile_th(void * fileNameParam){
     FILE * f = (FILE *)fileNameParam;
 
     char data[1024] = "";
-    int isEndSendFile = -1;
-    int descripteur = fileno(f);
-
-    while(isEndSendFile != 0) {
-        isEndSendFile = read(descripteur, data, 1023);
-        data[1023]='\0';
-        sendingInt(dSFile, isEndSendFile);
-        if(isEndSendFile != 0){
-            if (send(dSFile, data, sizeof(data), 0) == -1) {
-                perror("[-]Error in sending file.");
+    int blocLenth = 1;
+    /*int descripteur = fileno(f);*/
+    printf("Avant boucle\n");
+    while(blocLenth != 0) {
+        printf("Debut boucle\n");
+        blocLenth = fread(data, sizeof(char), 1024, f);
+        if (blocLenth == -1) {
+            perror("Error in reading file\n");
+            exit(EXIT_FAILURE);
+        }
+        /*data[1023]='\0';*/
+        sendingInt(dSFile, blocLenth);
+        printf("Nb reçus  : %d\n", blocLenth);
+        if(blocLenth != 0){
+            if (send(dSFile, data, blocLenth, 0) == -1) {
+                perror("[-]Error in sending file.\n");
                 exit(EXIT_FAILURE);
             }
         }
-        memset(data, 0, sizeof(isEndSendFile));
+        /*memset(data, 0, blocLenth);*/
     } 
         
     printf("\n** Fichier envoyé **\n\n");
@@ -132,7 +138,7 @@ void sendingFile(int dS){
 
     /*Ouverture et envoi du fichier*/
     FILE * f = NULL;
-    f = fopen(pathToFile,"r");
+    f = fopen(pathToFile,"rb");
     if (f == NULL) { 
         char * error = "error";
         sendMsg(dS, error);  
