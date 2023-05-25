@@ -289,8 +289,6 @@ void * receiveFile_th(void * fileNameParam){
     strcpy(pathToFile,"FileServeur/");
     strcat(pathToFile,fileName);
 
-    printf("Je reçois le fichier %s du client le socket %ld\n",fileName,dSFile);
-
     /*Création du fichier et du buffer pour recevoir les données*/
     char buffer[1024];
     FILE * f = fopen(pathToFile, "wb");
@@ -299,7 +297,6 @@ void * receiveFile_th(void * fileNameParam){
         exit(1);
     }
     int nbBytesRead = receivingInt(dSCFile);
-    printf("Nb reçus  : %d\n", nbBytesRead);
     /*Reception*/
     while(nbBytesRead > 0) {
         int res = recv(dSCFile, buffer, nbBytesRead, 0);
@@ -313,8 +310,6 @@ void * receiveFile_th(void * fileNameParam){
             printf("Erreur de reception de la taille");
             break;
         }
-        printf("Nb reçus  : %d\n", nbBytesRead);
-        //memset(buffer, 0, nbBytesRead);
     }
     printf("\n**Fichier reçu**\n");
     fclose(f);

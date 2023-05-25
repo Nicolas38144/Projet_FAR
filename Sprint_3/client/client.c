@@ -40,11 +40,25 @@ void handle_sigint(int sig) {
 /*
  *   isSendingFile(char * msg)
  *       Check si le client souhaite envoyer un fichier
- *           char * msg : message du client à vérifier
- *           Retour : 1 si le client veut envoyer un fichier, 0 sinon
+ *        char * msg : message du client à vérifier
+ *        Retour : 1 si le client veut envoyer un fichier, 0 sinon
  */
 int isSendingFile(char *msg) {
     if (strcmp(msg, "/file\n") == 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+/*
+ *   checkUpload(char * msg)
+ *       Check si le client souhaite télécharger un fichier
+ *       char * msg : message du client à vérifier
+ *       Retour : 1 si le client veut télécharger un fichier, 0 sinon
+ */
+int checkUpload(char *msg) {
+    if (strcmp(msg, "/upload\n") == 0)
     {
         return 1;
     }
@@ -83,32 +97,25 @@ void * sendingFile_th(void * fileNameParam){
 		exit(-1);
 	}
     
-
     FILE * f = (FILE *)fileNameParam;
 
     char data[1024] = "";
     int blocLenth = 1;
-    /*int descripteur = fileno(f);*/
-    printf("Avant boucle\n");
     while(blocLenth != 0) {
-        printf("Debut boucle\n");
         blocLenth = fread(data, sizeof(char), 1024, f);
         if (blocLenth == -1) {
             perror("Error in reading file\n");
             exit(EXIT_FAILURE);
         }
-        /*data[1023]='\0';*/
+
         sendingInt(dSFile, blocLenth);
-        printf("Nb reçus  : %d\n", blocLenth);
         if(blocLenth != 0){
             if (send(dSFile, data, blocLenth, 0) == -1) {
                 perror("[-]Error in sending file.\n");
                 exit(EXIT_FAILURE);
             }
         }
-        /*memset(data, 0, blocLenth);*/
     } 
-        
     printf("\n** Fichier envoyé **\n\n");
     fclose(f);
     close(dSFile);
@@ -117,26 +124,95 @@ void * sendingFile_th(void * fileNameParam){
 
 
 void sendingFile(int dS){
+    int fileCount = 0;
+    char fileNames[10][100];
     printf("\n ----- Listes de fichiers disponibles à l'envoi ----- \n");
 
     /*Affichage des fichiers disponibles à l'envoi*/
+    /*
     int sys = system("ls --format=single-column ./FileClientToSend");
     if(sys == -1){
         printf("Commande echouée");
     }
+    */
+
+   FILE* filePipe = popen("ls --format=single-column ./FileClientToSend", "rb");
+    if (filePipe == NULL) {
+        printf("Erreur lors de l'exécution de la commande\n");
+    } 
+    else {
+        char fileName[100];
+
+        while (fgets(fileName, sizeof(fileName), filePipe) != NULL) {
+            fileCount++;
+            strcpy(fileNames[fileCount - 1], fileName); /* Stocke le nom du fichier dans le tableau */
+            printf("%2d - %s", fileCount, fileName);
+        }
+        pclose(filePipe);
+    }
+
+    if (fileCount == 0) {
+        printf("Aucun fichier disponible.\n");
+    }
+
+    /* Saisie du numéro du fichier à envoyer */
+    int fileNumber;
+    printf("\n--- Entrez le numéro du fichier à envoyer : ");
+    scanf("%d", &fileNumber);
+    getchar();
+
+    if (fileNumber >= 1 && fileNumber <= fileCount) {
+        char* selectedFileName = fileNames[fileNumber - 1];
+        printf("Vous avez sélectionné le fichier : %s\n", selectedFileName);
+        selectedFileName[strcspn(selectedFileName, "\n")] = '\0';
+        
+        /*Création du chemin pour trouver le fichier*/
+        char * pathToFile = (char *) malloc(sizeof(char)*130);
+        strcpy(pathToFile,"FileClientToSend/");
+        strcat(pathToFile,selectedFileName);
+
+        /*Ouverture et envoi du fichier*/
+        FILE * f = NULL;
+        f = fopen(pathToFile,"rb");
+        if (f == NULL) { 
+            char * error = "error";
+            sendMsg(dS, error);  
+            printf("Erreur! Fichier inconnu\n"); 
+        }
+        else {
+            /*Envoi du nom du fichier au serveur*/
+            sendMsg(dS,selectedFileName);
+
+            /*Création du thread d'envoi de fichier*/
+            pthread_t threadFile;
+            int thread = pthread_create(&threadFile, NULL, sendingFile_th, (void *)f);
+            if(thread==-1){
+                perror("error thread");
+            }
+        }
+        free(pathToFile);
+    } 
+    else {
+        printf("Numéro de fichier invalide.\n");
+    }
 
     /*Saisie du nom du fichier au clavier*/
+    /*
     char * fileName = (char *) malloc(sizeof(char)*100);
     printf("\n --- Saisissez le nom d'un fichier à envoyer : \n");
     fgets(fileName, 100, stdin);
     fileName = strtok(fileName, "\n");
-    
+    */
+
     /*Création du chemin pour trouver le fichier*/
+    /*
     char * pathToFile = (char *) malloc(sizeof(char)*130);
     strcpy(pathToFile,"FileClientToSend/");
-    strcat(pathToFile,fileName);
+    strcat(pathToFile,selectedFileName);
+    */
 
     /*Ouverture et envoi du fichier*/
+    /*
     FILE * f = NULL;
     f = fopen(pathToFile,"rb");
     if (f == NULL) { 
@@ -145,10 +221,10 @@ void sendingFile(int dS){
         printf("Erreur! Fichier inconnu\n"); 
     }
     else {
-        /*Envoi du nom du fichier au serveur*/
+        /*Envoi du nom du fichier au serveur
         sendMsg(dS,fileName);
 
-        /*Création du thread d'envoi de fichier*/
+        /*Création du thread d'envoi de fichier
         pthread_t threadFile;
         int thread = pthread_create(&threadFile, NULL, sendingFile_th, (void *)f);
         if(thread==-1){
@@ -157,6 +233,7 @@ void sendingFile(int dS){
     }
     free(pathToFile);
     free(fileName);
+    */
 }
 
 
