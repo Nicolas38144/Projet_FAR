@@ -29,5 +29,24 @@ extern int createSocket(int port);
 extern int acceptConnection(int dS);
 extern void * receiveFile_th( void * fileNameParam);
 extern int receivingInt(long dS);
+extern void initChannel();
+extern void sendingChannel(int numClient, char * msg);
+extern void welcomeMsg(int dS);
+extern void presentationChannel(int dS);
+extern void createChannel(int numClient, char * msg);
+extern int getChannelByName(char * channelName);
+extern void addClient(int numClient, int idChannel);
+extern void deleteClient(int numClient, int idChannel);
+extern void joinChannel(int numClient, char * msg);
+extern void updateChannel();
+extern int isOccupiedChannel(int idChannel);
+extern void removeChannel(int numClient, char * msg);
+extern int getNonCreatedChannel();
+extern void updateNameChannel(int numClient, char * msg);
+extern void updateDescrChannel(int numClient, char * msg);
+extern void addNameToMsg(char * msg, char * nameSender);
+extern int isNumberInRange(char* message);
+extern int numCommande(char * msg);
+extern void displayClient(int numClient);
 
 #endif /* FUNCSERV_H */

@@ -4,6 +4,7 @@
 
 
 #define MAX_CLIENT 3
+#define NB_CHANNEL 5
 
 
 /*
@@ -17,8 +18,19 @@ struct Client{
     int connected;
     char * name;
     long dSC;
+    int idChannel;
 };
 
+
+/*Structure d'un canal de discussion */
+typedef struct Channel Channel;
+struct Channel{
+    int id;
+    char * name;
+    char * descr;
+    int members[MAX_CLIENT];
+    int created;
+};
 
 /*
 *   tabClient           : Tableau contenant les clients connectés
@@ -26,6 +38,7 @@ struct Client{
 *   nbConnectedClient   : Nombre de clients actuellement connectés
 */
 extern Client tabClient[MAX_CLIENT];
+extern Channel channelAvailable[NB_CHANNEL];
 extern pthread_t tabThread[MAX_CLIENT];
 extern int nbConnectedClient;
 extern int tabThreadToKill[MAX_CLIENT];
@@ -39,3 +52,5 @@ extern char * arg1;
 Pour compiler le tout :
 taper bash make.sh
 */
+
+

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define MAX_CLIENT 3
 #define MAX_MSG 150
@@ -282,8 +283,8 @@ void killThread() {
 
 /* 
 *   int isNameAvailable(char * name)
-*       Fonction qui vérifie si le pseudo saisi n'est pas déjà  utilisé
-*       Retour: 1 si le pseudo n'est pas encore utilisé, 0 sinon 
+*       Fonction qui vérifie si le name saisi n'est pas déjà  utilisé
+*       Retour: 1 si le name n'est pas encore utilisé, 0 sinon 
 */
 int isNameAvailable(char * name) {
     int i= 0;
@@ -426,4 +427,530 @@ int receivingInt(long dS) {
         exit(-1);
     }
     return number;
+}
+
+/*-----------------------FONCTION CHANNEL--------------------*/
+
+void initChannel(){
+    int i = 0;
+    char buffer[100] = "";
+
+    /*Ouverture du fichier contenant la dernière sauvegarde des salons*/
+    FILE *fp = fopen("FunctionsServeur/room.txt","r");
+    if(fp==NULL){
+        perror("error\n");
+    }
+
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+    
+    /*Initialisation du tableau des salons à partir du contenu du fichier*/
+    while(fgets(buffer,100, (FILE *) fp)!=NULL && i<NB_CHANNEL){
+        
+        /*ID*/
+        channelAvailable[i].id = atoi(strtok(buffer,","));
+
+        /*NAME*/
+        channelAvailable[i].name = (char *)malloc(sizeof(char)*100);
+        strcpy(channelAvailable[i].name,strtok(NULL,","));
+
+        /*DESCRIPTION*/
+        channelAvailable[i].descr = (char *)malloc(sizeof(char)*100);
+        strcpy(channelAvailable[i].descr,strtok(NULL,","));
+
+        /*CREATED*/
+        channelAvailable[i].created = atoi(strtok(NULL,","));
+
+        /*MEMBERS*/
+        /*Initialisation du tableau des membres à 0 (false: pas présent)*/
+        int j;
+        for (j=0;j<MAX_CLIENT;j++){
+            channelAvailable[i].members[j]=0;
+        }
+        i++;
+    }
+}
+
+void sendingChannel(int numClient, char * msg){
+
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+    int dS = tabClient[numClient].dSC;
+
+    printf("Je reçois le message du client avec le socket %d\n",dS);
+
+    addNameToMsg(msg, tabClient[numClient].name);
+
+    int i;
+    int idChannel = tabClient[numClient].idChannel;
+    for (i = 0; i<MAX_CLIENT ; i++) {
+
+        /*On envoie le message à tout les clients présent dans le salon  
+        mais on ne l'envoie pas au client qui a écrit le message*/
+        if(channelAvailable[idChannel].members[i] && dS != tabClient[i].dSC){
+            sendMsg(tabClient[i].dSC, msg);
+        }
+    }
+
+    pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+
+}
+
+void welcomeMsg(int dS){
+    int i;
+    char * msg = (char *)malloc(sizeof(char)*300);
+    strcpy(msg,"\n___Bienvenu dans le salon général___\nVoici les membres présents : \n");
+
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+    /*Ajout des membres présents dans la salon général*/
+    for (i=0;i<MAX_CLIENT;i++){
+        if(channelAvailable[0].members[i]){
+            strcat(msg,tabClient[i].name);
+            strcat(msg,"\n");
+        }
+    }
+
+    pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+
+    strcat(msg,"________Bonne communication________\n");
+    sendMsg(dS,msg);
+    free(msg);
+}
+
+void presentationChannel(int dS){
+    int i;
+    int j;
+    char * msg = (char *)malloc(sizeof(char)*400);
+    strcpy(msg,"Liste des salons existants\n");
+
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+    for (i=0;i<NB_CHANNEL;i++){
+        if (channelAvailable[i].created){
+
+            /*NAME*/
+            strcat(msg,"\n** ");
+            strcat(msg,channelAvailable[i].name);
+            strcat(msg," **\n");
+
+            /*DESCRIPTION*/
+            strcat(msg," -- ");
+            strcat(msg,channelAvailable[i].descr);
+            strcat(msg," --\n");
+
+            /*MEMBERS*/
+            for(j=0;j<MAX_CLIENT;j++){
+                if(channelAvailable[i].members[j]){
+                    strcat(msg,tabClient[j].name);
+                    strcat(msg,"\n");
+                }
+            }
+        } 
+    }
+    pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+
+    strcat(msg,"______________________________________\n\n");
+    printf("%s\n",msg);
+
+    /*Envoi du message de présentation*/
+    sendMsg(dS,msg);
+    free(msg);
+}
+
+void createChannel(int numClient, char * msg) {
+    char * error = (char *)malloc(sizeof(char)*60);
+
+    char *  channelName =  (char *) malloc(sizeof(char)*300);
+    strtok(msg," "); /*suppression de la commande dans le message*/
+    channelName = strtok(NULL,"\0"); /*récupération du nom du salon à créer*/
+
+    /*ID*/
+    int idChannel = getNonCreatedChannel();
+
+    if(idChannel != NB_CHANNEL){ /*Un salon est disponible*/
+        pthread_mutex_lock(&lock); /*Début d'une section critique*/
+        
+        /*CREATED*/
+        channelAvailable[idChannel].created = 1;
+        /*NAME*/
+        strcpy(channelAvailable[idChannel].name,channelName);
+        
+        /*MAJ NOM dans le fichier*/
+        updateChannel();
+
+        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+        
+    }else { /*Aucun salon n'est disponible*/
+        strcpy(error, "Le nombre maximum de salons a été atteint.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+    }
+    /*free(channelName);
+    free(error);*/
+}
+
+int getChannelByName(char * channelName){
+    int found = 0;
+    int i = 0; 
+    int indice = -1;
+    
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+    while(i<NB_CHANNEL && !found){
+        if(strcmp(channelAvailable[i].name, channelName) == 0){
+            found = 1;
+            indice = i;
+        }
+        i++;
+    }
+
+    pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+
+    return indice;
+}
+
+void addClient(int numClient, int idChannel){
+
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+    /*Ajout de l'id du salon au client*/
+    tabClient[numClient].idChannel = idChannel;
+    /*On indique dans les membres du salon que le client est présent*/
+    channelAvailable[idChannel].members[numClient] = 1;
+
+    pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+    
+    /*Envoi d'un message pour informer les autres membres du salon*/
+    char * joinNotification =  (char *) malloc(sizeof(char)*100);
+    strcpy(joinNotification,"** a rejoint le salon **\n");
+    sendingChannel(numClient, joinNotification); 
+
+    free(joinNotification);
+}
+
+void deleteClient(int numClient, int idChannel){
+    /*Envoi d'un message pour informer les autres membres du salon*/
+    char * leaveNotification =  (char *) malloc(sizeof(char)*100);
+    strcpy(leaveNotification,"** a quitté le salon **\n");
+    sendingChannel(numClient, leaveNotification); 
+        
+    free(leaveNotification);
+
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+    /*On indique dans les membres du salon que le client n'est plus présent*/
+    channelAvailable[idChannel].members[numClient] = 0;
+
+    pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+
+}
+
+void joinChannel(int numClient, char * msg){
+    char * error = (char *)malloc(sizeof(char)*60);
+
+    char *  channelName =  (char *) malloc(sizeof(char)*300);
+    strtok(msg," "); /*suppression de la commande dans le message*/
+    channelName = strtok(NULL,"\0"); /*récupération du nom du salon à créer*/
+
+    /*ID*/
+    int idChannel = getChannelByName(channelName);
+
+    if(idChannel == -1){ /*Aucun salon n'a été trouvé*/
+
+        strcpy(error, "Aucun salon trouvé.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+
+    }else { /*Un salon à été trouvé, on fait le changement de salon*/
+
+        pthread_mutex_lock(&lock); /*Début d'une section critique*/
+        int idChannelClient = tabClient[numClient].idChannel;
+        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+
+        deleteClient(numClient,idChannelClient);
+        addClient(numClient,idChannel);
+    }
+
+    return;
+}
+
+/*Attention cette fonction est toujours appelée dans une section critique, ne pas mettre de mutex dedans*/
+void updateChannel(){
+    char * line = (char *)malloc(sizeof(char)*200);
+    
+    /*Suppression fichier*/
+    int ret = remove("./FunctionsServeur/room.txt");
+    if (ret == -1){
+        perror("erreur suppression updateChannel: \n");
+        exit(1);
+    }
+
+    /*Création du fichier*/
+    int fd = open("./FunctionsServeur/room.txt", O_CREAT | O_WRONLY, 0666);
+    if (fd == -1){
+        perror("erreur création updateChannel: \n");
+        exit(1);
+    }
+
+    int i;
+    for (i = 0; i < NB_CHANNEL; i++){
+        printf("for %d",i);
+        char * id = malloc(sizeof(int));
+        char * create = malloc(sizeof(int));
+
+        /*ID*/
+        sprintf(id,"%d",channelAvailable[i].id);
+        strcpy(line,id);
+        strcat(line,",");
+
+        /*NOM*/
+        strcat(line,channelAvailable[i].name);
+        strcat(line,",");
+
+        /*DESCRIPTION*/
+        strcat(line,channelAvailable[i].descr);
+        strcat(line,",");
+
+        /*CREATED*/
+        sprintf(create,"%d",channelAvailable[i].created);
+        strcat(line, create);
+        strcat(line, "\n\0");
+        
+        int w = write(fd,line,strlen(line));
+        if(w == -1){
+            perror("erreur au write\n");
+            exit(1);
+        }
+
+        free(id);
+        free(create);
+    }
+    free(line);
+    return;
+}
+ 
+int isOccupiedChannel(int idChannel){
+    int isO = 0;
+    int i = 0;
+    while (i<MAX_CLIENT){
+        isO = channelAvailable[idChannel].members[i];
+        i++;
+    }
+    return isO;
+ }
+
+void removeChannel(int numClient, char * msg){
+    char * error = (char *)malloc(sizeof(char)*60);
+
+    char *  channelName =  (char *) malloc(sizeof(char)*300);
+    strtok(msg," "); /*suppression de la commande dans le message*/
+    channelName = strtok(NULL,"\0"); /*récupération du nom du salon à créer*/
+
+    /*ID*/
+    int idChannel = getChannelByName(channelName);
+
+    if(idChannel == -1){ /*Aucun salon n'a été trouvé*/
+
+        strcpy(error, "Aucun salon trouvé.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+
+    }else if(idChannel == 0){ /*On ne peut modifier le salon principal*/
+
+        strcpy(error, "Vous ne pouvez pas supprimer le salon général.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+
+    }else if(isOccupiedChannel(idChannel)) { /*Des clients sont présents dans le salon à supprimer*/
+        
+        strcpy(error, "Vous ne pouvez pas supprimer un salon occupé.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+
+    }else{ /*Le salon peut être supprimé*/
+        
+        pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+        channelAvailable[idChannel].created=0;
+        strcpy(channelAvailable[idChannel].descr,"Default");
+
+        /*MAJ NOM dans le fichier*/
+        updateChannel();
+
+        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+        
+    }
+}
+
+int getNonCreatedChannel(){
+    int i = 0;
+
+    pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+    while(i<NB_CHANNEL && channelAvailable[i].created){
+        i++;
+    }
+
+    pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+
+    return i;
+}
+
+void updateNameChannel(int numClient, char * msg){
+    char * error = (char *)malloc(sizeof(char)*60);
+
+    /*On récupère le nom du salon à modifier*/
+    char *  channelName =  (char *) malloc(sizeof(char)*300);
+    strtok(msg," "); /*suppression de la commande dans le message*/
+    channelName = strtok(NULL," "); /*récupération du nom du salon à créer*/
+
+    /*On récupère le nouveau nom*/
+    char *  newName =  (char *) malloc(sizeof(char)*300);
+    newName = strtok(NULL,"\0");
+
+    /*ID*/
+    int idChannel = getChannelByName(channelName);
+
+    if(idChannel == -1){ /*Aucun salon n'a été trouvé*/
+
+        strcpy(error, "Aucun salon trouvé.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+
+    }else if(idChannel == 0){ /*On ne peut modifier le salon principal*/
+
+        strcpy(error, "Vous ne pouvez pas modifier le salon général.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+
+    }else{ /*On peut modifier le salon*/
+
+        pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+        strcpy(channelAvailable[idChannel].name,newName);
+    
+        /*MAJ NOM dans le fichier*/
+        updateChannel();
+
+        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+    }
+}
+
+void updateDescrChannel(int numClient, char * msg){
+    char * error = (char *)malloc(sizeof(char)*60);
+
+    /*On récupère le nom du salon à modifier*/
+    char *  channelName =  (char *) malloc(sizeof(char)*300);
+    strtok(msg," "); /*suppression de la commande dans le message*/
+    channelName = strtok(NULL," "); /*récupération du nom du salon à créer*/
+
+    /*On récupère le nouveau nom*/
+    char *  newDescr =  (char *) malloc(sizeof(char)*300);
+    newDescr = strtok(NULL,"\0");
+
+    /*ID*/
+    int idChannel = getChannelByName(channelName);
+
+    if(idChannel == -1){ /*Aucun salon n'a été trouvé*/
+
+        strcpy(error, "Aucun salon trouvé.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+
+    }else if(idChannel == 0){ /*On ne peut modifier le salon principal*/
+
+        strcpy(error, "Vous ne pouvez pas modifier le salon général.\n");
+        sendMsg(tabClient[numClient].dSC, error);
+
+    }else{ /*On peut modifier le salon*/
+
+        pthread_mutex_lock(&lock); /*Début d'une section critique*/
+
+        strcpy(channelAvailable[idChannel].descr,newDescr);
+    
+        /*MAJ NOM dans le fichier*/
+        updateChannel();
+
+        pthread_mutex_unlock(&lock); /*Fin d'une section critique*/
+    }
+}
+
+void addNameToMsg(char * msg, char * nameSender){
+    char * msgToSend = (char *) malloc(sizeof(char)*150);
+    strcpy(msgToSend, nameSender);
+    strcat(msgToSend, " : ");
+    strcat(msgToSend, msg);
+    strcpy(msg,msgToSend);
+    free(msgToSend);
+    return;
+}
+int numCommande(char * msg){
+    /*Récupération de la commande*/
+    char * msgCopy = (char *) malloc(sizeof(char)*30);
+    strcpy(msgCopy,msg);
+    char * cmd = (char *) malloc(sizeof(char)*30);
+    cmd = strtok(msgCopy," ");
+    char first = cmd[0];
+
+    /*Analyse de la commande pour trouver son numéro*/
+    int num = 0;
+    if (strcmp(cmd, "/man")==0){
+        num = 1;
+    }else if(strcmp(cmd, "/whoishere")==0){
+        num = 2;
+    }else if(strcmp(cmd, "/pseudo")==0){
+        num = 3;
+    }else if(strcmp(cmd, "/rooms")==0){
+        num = 4;
+    }else if(strcmp(cmd, "/join")==0){
+        num = 5;
+    }else if(strcmp(cmd, "/create")==0){
+        num = 6;
+    }else if(strcmp(cmd, "/remove")==0){
+        num = 7;
+    }else if(strcmp(cmd, "/name")==0){
+        num = 8;
+    }else if(strcmp(cmd, "/descr")==0){
+        num = 9;
+    }else if(strcmp(cmd, "/upload")==0){
+        num = 10;
+    }else if (strcmp(cmd, "/download")==0){
+        num = 11;
+    }else if (strcmp(cmd, "/end")==0){
+        num = 12;
+    }else if (strcmp(cmd, "@all")==0){
+        num = 13;
+    }else if (strcmp(&first, "@")==0){        
+        num = 14;
+    }
+    return num;
+}
+void displayClient(int numClient){
+
+	char * msg = (char *)malloc(sizeof(char)*12*MAX_CLIENT);
+	strcpy(msg, "Liste des clients connectés \n");
+    int i;
+
+    for(i = 0; i < MAX_CLIENT; i++){
+    	
+    	/*Si le client i est connecté*/
+    	if(tabClient[i].connected){
+    		strcat(msg, "-- ");
+    		strcat(msg, tabClient[i].name);
+    		strcat(msg, "\n");
+    	}
+    }
+    strcat(msg, "___________________________ \n");
+    sendMsg(tabClient[numClient].dSC, msg);
+    free(msg);
+
+	return;
+}
+int isNumberInRange(char* message) {
+    // Vérifier si le premier caractère est un chiffre
+    if (!isdigit(message[0])) {
+        return 0;
+    }
+    
+    // Convertir le chiffre en entier
+    int number = message[0] - '0';
+    
+    // Vérifier si le nombre est compris entre 0 et 14
+    if (number >= 0 && number <= 14) {
+        return 1;
+    }
+    
+    return 0;
 }

@@ -39,8 +39,8 @@ void * broadcast(void * numeroClient){
         char * msgReceived = (char *) malloc(sizeof(char)*100);
         receiveMsg(tabClient[numClient].dSC, msgReceived, sizeof(char)*100);
         printf("\nMessage recu: %s\n", msgReceived);
-
-        /* condition_a permet de gerer le cas ou le message ne commene pas par un @*/
+        char * msgInfo = (char *) malloc(sizeof(char)*100);
+        /* condition_a permet de gerer le cas ou le message ne commence pas par un @*/
         int condition_a = 1;
         /* s'il y a @ */
         char first = msgReceived[0];
@@ -56,7 +56,8 @@ void * broadcast(void * numeroClient){
         isCommand = checkIsCommand(msgReceived, tabClient[numClient].dSC);
         /*Si ce n'est ni une commande ni un message privé*/
         if (isCommand == 0 && condition_a == 0) {
-            /*Ajout du nom (=name) de l'expéditeur devant le message à envoyer*/
+            if (numCommande(msgReceived) == 0){
+                            /*Ajout du nom (=name) de l'expéditeur devant le message à envoyer*/
             char * msgToSend = (char *) malloc(sizeof(char)*200);
             strcat(msgToSend, nameSender);
             strcat(msgToSend, " : ");
@@ -68,6 +69,58 @@ void * broadcast(void * numeroClient){
 
             /*Libération de la mémoire du message envoyé*/
             free(msgToSend);
+            }else {
+                           int numCmd = numCommande(msgReceived);
+            printf("Numéro de la commande: %d\n",numCmd);
+
+            switch(numCmd){
+            case 0:        
+                strcpy(msgInfo,"Aucune commande reconnue\n"),
+                sendMsg(tabClient[numClient].dSC,msgInfo);
+                break;
+            case 1: /* --/man-- Afficher la listes des commandes*/
+                /*displayMan(numClient); ToDo : corriger les erreurs*/
+                break;
+            case 2: /* --/whoishere-- Afficher la liste des clients connectés*/
+                displayClient(numClient);
+                break;
+            case 3:
+                strcpy(msgInfo,"Aucune commande reconnue\n"),
+                sendMsg(tabClient[numClient].dSC,msgInfo);
+                break;
+            case 4: /* --/rooms-- Présentation des salons (Nom, Description et clients membres)*/
+                presentationChannel(tabClient[numClient].dSC);
+                break;
+            case 5: /* --/join nameRoom-- Changer de salon*/
+                joinChannel(numClient, msgReceived);
+                break;
+            case 6: /* --/create nameRoom-- Créer un nouveau salon*/
+                createChannel(numClient, msgReceived);
+                break;
+            case 7: /* --/remove nameRoom-- Supprimer un salon*/
+                removeChannel(numClient,msgReceived);
+                break;
+            case 8: /* --/name nameRoom newNameRoom-- Changer le nom d'un salon*/
+                updateNameChannel(numClient,msgReceived);
+                break;
+            case 9: /* --/descr nameRoom newDescrRoom-- Changer la description d'un salon*/
+                updateDescrChannel(numClient,msgReceived);
+                break;
+            case 10: /* --/upload-- Télécharger un fichier vers le serveur*/
+                strcpy(msgInfo,"Aucune commande reconnue\n"),
+                sendMsg(tabClient[numClient].dSC,msgInfo);
+                break;
+                break;
+            case 11: /* --/download-- Envoyer un fichier vers le client*/
+                strcpy(msgInfo,"Aucune commande reconnue\n"),
+                sendMsg(tabClient[numClient].dSC,msgInfo);
+                break;
+            case 12: /* --/end-- Quitter le serveur*/
+                isFinished = 1;
+                break;
+            }
+            }
+            
         }        
         /*Libération de la mémoire du message reçu*/
         free(msgReceived);
@@ -92,11 +145,15 @@ int main(int argc, char *argv[]) {
     arg1 = argv[1];
     sem_init(&semNbClient, 0, MAX_CLIENT);
 
+    
+
     /*Verification des paramètres*/
     if (argc < 2) {
         perror("Erreur : Lancez avec ./serveur <votre_port>");
 		exit(EXIT_FAILURE);
     }
+
+    initChannel();
 
     /*Création des sockets*/
 	int dS = createSocket(atoi(arg1));
@@ -179,8 +236,10 @@ int main(int argc, char *argv[]) {
 
 
         /*On libère la mémoire de "name"*/
-        free(name);/*On avertie tout le monde de l'arriver du nouveau client*/
+        free(name);
 
+        addClient(numClient,0);
+        welcomeMsg(dSC);
         
         /*Crée un nouveau thread qui exécute la fonction broadcast en utilisant l'entier numClient comme argument.*/
         int threadClient = pthread_create(&tabThread[numClient],NULL,broadcast,(void *)numClient);
