@@ -4,7 +4,7 @@
 
 
 #define MAX_CLIENT 3
-#define NB_CHANNEL 5
+#define NB_ROOMS 5
 
 
 /*
@@ -18,18 +18,19 @@ struct Client{
     int connected;
     char * name;
     long dSC;
-    int idChannel;
+    int idRoom;
 };
 
 
 /*Structure d'un canal de discussion */
-typedef struct Channel Channel;
-struct Channel{
+
+typedef struct Room Room;
+struct Room{
     int id;
     char * name;
     char * descr;
     int members[MAX_CLIENT];
-    int created;
+    int created; /*Permet de savoir s'il faut afficher le salon au client, s'il est créé ou non*/
 };
 
 /*
@@ -38,10 +39,11 @@ struct Channel{
 *   nbConnectedClient   : Nombre de clients actuellement connectés
 */
 extern Client tabClient[MAX_CLIENT];
-extern Channel channelAvailable[NB_CHANNEL];
+extern Room rooms[NB_ROOMS];
 extern pthread_t tabThread[MAX_CLIENT];
 extern int nbConnectedClient;
 extern int tabThreadToKill[MAX_CLIENT];
+extern int nbThreadToKill;
 extern pthread_mutex_t lock;
 extern long dSFile;
 extern char * arg1;
