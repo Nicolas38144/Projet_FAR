@@ -1,4 +1,0 @@
-/help -> display all commands
-/pm <@pseudo> <message> -> Send a private message to @user
-/logout -> Disconnects the client
-/isFull -> True/False (How many people can still connect ?)
