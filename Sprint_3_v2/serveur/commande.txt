@@ -1,0 +1,5 @@
+/help -> display all commands
+/pm <@pseudo> <message> -> Send a private message to @user
+/logout -> Disconnects the client
+/upload -> send file to server
+/download -> receiv file from server
