@@ -245,7 +245,7 @@ void * sendFile_th(void * file_param) {
                     exit(EXIT_FAILURE);
                 }
             }
-          printf("blocLenth : %d\n",blocLenth);
+            printf("blocLenth : %d\n",blocLenth);
         }
         printf("\n** Fichier envoyé **\n\n");
         fclose(f);        

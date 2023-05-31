@@ -230,8 +230,6 @@ void * receivingFile_th(void * dSFile) {
             token = strtok(NULL, "\n");
         }
 
-        printf("pathToFile : %s\n",pathToFile);
-
         /*Création du fichier et du buffer pour recevoir les données*/
         char buffer[1024];
         FILE * f = fopen(pathToFile, "wb");
@@ -255,7 +253,7 @@ void * receivingFile_th(void * dSFile) {
                 break;
             }
         }
-        printf("\n**Fichier reçu**\n");
+        printf("\n**Fichier reçu**\n\n");
         free(pathToFile);
         fclose(f);
     }
@@ -299,7 +297,7 @@ void receivingFile(int dSC) {
         sendMsg(dSC, fileName);
         /* Réponse du serveur sur l'existance du fichier */
         int ok = receivingInt(dSC);
-        printf("ok :  %d\n",ok);
+        /*printf("ok :  %d\n",ok);*/
         if (ok == 1) {
             /* Création du thread pour gérer la reception du fichier */
             strcpy(ultimate, fileName);
@@ -312,10 +310,10 @@ void receivingFile(int dSC) {
             }
         }
         else {
-            printf("Fichier inexistant dans le serveur.\nRetour sur la discussion\n\n");
+            printf("\nFichier inexistant dans le serveur.\nRetour sur la discussion\n\n");
         }
     }  
-    /*free(fileName);*/
+    free(fileName);
 }
 
 
