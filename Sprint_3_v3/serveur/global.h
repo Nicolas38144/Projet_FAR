@@ -14,6 +14,7 @@
 */
 typedef struct Client Client;
 struct Client{
+    int idRoom;
     int connected;
     char * name;
     long dSC;

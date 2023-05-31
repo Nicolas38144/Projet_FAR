@@ -192,7 +192,13 @@ int main(int argc, char *argv[]) {
             perror("Erreur lors de la création du thread\n");
         }
         joinChannel(0,numClient);
+        char *msgSend = (char*)malloc(sizeof(char)*200);
+        strcpy(msgSend, "Bienvenu(e) dans le général\n");
+        send(tabClient[numClient].dSC, msgSend, strlen(msgSend), 0);
+        free(msgSend);
     }
+
+    
     sem_destroy(&semNbClient);
     close(dS);
     return 0;
