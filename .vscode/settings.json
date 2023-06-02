@@ -16,5 +16,13 @@
             "command": "extension.execute",
             "priority": 4
         }
-    ]
+    ],
+    "files.associations": {
+        "sendfilefunc.h": "c",
+        "veriffunc.h": "c",
+        "global.h": "c",
+        "messagefunc.h": "c",
+        "client.h": "c",
+        "receivfilefunc.h": "c"
+    }
 }

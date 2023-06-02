@@ -1,0 +1,9 @@
+/help -> display all commands
+@pseudo <message> -> Send a private message to @user
+/logout -> Disconnects the client
+/upload -> send file to server
+/download -> receiv file from server
+#create <nomChannel> -> create a new channel
+#join <nomChannel> -> join the channel
+#changedesc <newDescription> -> edit the description of the actual channel
+#printnomch <caractère> -> give you the existing channel
