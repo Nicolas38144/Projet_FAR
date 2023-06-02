@@ -8,8 +8,8 @@
 #include <unistd.h>
 #include <semaphore.h>
 
-#include "global.h"
-#include "funcServ.h"
+#include "../include/global.h"
+#include "../include/funcServ.h"
 
 #define MAX_CLIENT 3
 

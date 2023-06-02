@@ -1,4 +1,4 @@
-#include "global.h"
+#include "../include/global.h"
 
 Channel channels[MAX_CHANNELS];
 Client tabClient[MAX_CLIENT];

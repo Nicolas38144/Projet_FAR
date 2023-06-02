@@ -101,7 +101,7 @@ void sendingFile(int dS) {
             
             /*Création du chemin pour trouver le fichier*/
             char * pathToFile = (char *) malloc(sizeof(char)*130);
-            strcpy(pathToFile,"FileClientToSend/");
+            strcpy(pathToFile,"./FileClientToSend/");
             strcat(pathToFile,selectedFileName);
 
             /*Ouverture et envoi du fichier*/

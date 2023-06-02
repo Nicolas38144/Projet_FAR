@@ -1,10 +1,11 @@
-#include "global.h"
-#include "funcServ.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../include/global.h"
+#include "../include/funcServ.h"
 
 #define MAX_CLIENT 3
 #define MAX_MSG 150
@@ -142,7 +143,7 @@ void * receiveFile_th(void * fileNameParam){
 
     /*Création du chemin pour enregister le fichier*/ 
     char * pathToFile = (char *) malloc(sizeof(char)*130);
-    strcpy(pathToFile,"FileServeur/");
+    strcpy(pathToFile,"./FileServeur/");
     strcat(pathToFile,fileName);
     /*Création du fichier et du buffer pour recevoir les données*/
     char buffer[1024];
@@ -266,7 +267,7 @@ void sendFile(int dSC) {
     int buffer_size = 0;
 
     // Ouvrir le répertoire
-    dir = opendir("./FileServeur");
+    dir = opendir("./FileServeur/");
     if (dir == NULL) {
         perror("Erreur lors de l'ouverture du repertoire");
         exit(0);

@@ -23,6 +23,7 @@
         "global.h": "c",
         "messagefunc.h": "c",
         "client.h": "c",
-        "receivfilefunc.h": "c"
+        "receivfilefunc.h": "c",
+        "funcserv.h": "c"
     }
 }
