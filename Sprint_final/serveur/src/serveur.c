@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -10,6 +9,8 @@
 
 #include "../include/global.h"
 #include "../include/funcServ.h"
+#include "../include/channelFunc.h"
+#include "../include/messageFunc.h"
 
 #define MAX_CLIENT 3
 
@@ -103,7 +104,7 @@ int main(int argc, char *argv[]) {
     }
 
     /*Création des sockets*/
-	int dS = createSocket(atoi(arg1));
+	  int dS = createSocket(atoi(arg1));
     dSFileReceiv = createSocket(atoi(arg1)+1);
     dSFileSend = createSocket(atoi(arg1)+2);
 
@@ -142,7 +143,7 @@ int main(int argc, char *argv[]) {
         printf("Client %ld connecté\n", numClient);
 
         /*Envoi au client le nombre de clients qui sont déjà connectés*/
-        send_integer(dSC, numClient);
+        sendingInt(dSC, numClient);
 
         /*Réception du nom (=name) du client. Son name <= 100 caractères*/
         char * name = (char *) malloc(sizeof(char)*100);
@@ -151,14 +152,14 @@ int main(int argc, char *argv[]) {
         int availableName = 0; /*false*/
 
         while(!availableName){
-            send_integer(dSC,availableName);
+            sendingInt(dSC,availableName);
             receiveMsg(dSC, name, sizeof(char)*100);
             name = strtok(name, "\n");
             availableName = isNameAvailable(name);
             printf("Pseudo non disponible\n");
         }
         /*pseudo valide*/
-        send_integer(dSC, availableName);
+        sendingInt(dSC, availableName);
 
 
 
